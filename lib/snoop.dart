@@ -30,3 +30,5 @@ export 'src/dio/dio_inspector_registry.dart'
     show DioCallRecord, DioCallStats, DioEndpointStats, DioInspectorRegistry;
 export 'src/logs/log_inspector_registry.dart'
     show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;
+export 'src/routes/route_inspector_registry.dart'
+    show SnoopRouteAction, SnoopRouteObserver, SnoopRouteRecord, RouteInspectorRegistry;
