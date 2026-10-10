@@ -28,3 +28,5 @@ export 'src/bloc/inspector_bloc_observer.dart' show SnoopBlocObserver;
 export 'src/dio/dio_inspector_interceptor.dart' show SnoopDioInterceptor;
 export 'src/dio/dio_inspector_registry.dart'
     show DioCallRecord, DioCallStats, DioEndpointStats, DioInspectorRegistry;
+export 'src/logs/log_inspector_registry.dart'
+    show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;
