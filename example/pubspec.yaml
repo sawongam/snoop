@@ -1,0 +1,21 @@
+name: snoop_example
+description: Demo app for snoop.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  dio: ^5.4.0
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.0.0
+  snoop:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
