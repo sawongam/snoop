@@ -1,7 +1,7 @@
 # snoop
 
 [![pub package](https://img.shields.io/pub/v/snoop.svg)](https://pub.dev/packages/snoop)
-[![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
+![Publisher](https://img.shields.io/badge/Publisher-sawongam-blue.svg)
 
 **A Flutter BLoC & Dio inspector that lives inside your app.**
 
@@ -239,7 +239,3 @@ fields.
 A runnable demo is in [`example/`](example/lib/main.dart). It has a counter cubit, a posts bloc
 that uses Dio, a request that fails with a 404, redacted auth headers, log lines, a pushed route
 with arguments, `showValueSheet` on long-press, and custom toggles.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
