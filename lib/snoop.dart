@@ -32,6 +32,15 @@ export 'src/dio/dio_inspector_view.dart' show buildCurl;
 export 'src/inspector_registry.dart' show Snoop;
 export 'src/logs/log_inspector_registry.dart'
     show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;
+export 'src/overlay/inspector_toggle.dart'
+    show
+        SnoopAction,
+        SnoopActionToggle,
+        SnoopSegmentedToggle,
+        SnoopSwitchToggle,
+        SnoopToggle,
+        SnoopValueGetter,
+        SnoopValueSetter;
 export 'src/routes/route_inspector_registry.dart'
     show SnoopRouteAction, SnoopRouteObserver, SnoopRouteRecord, RouteInspectorRegistry;
 export 'src/widgets/inspector_shared.dart' show snoopCopy;
