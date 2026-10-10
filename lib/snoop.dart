@@ -32,6 +32,7 @@ export 'src/dio/dio_inspector_view.dart' show buildCurl;
 export 'src/inspector_registry.dart' show Snoop;
 export 'src/logs/log_inspector_registry.dart'
     show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;
+export 'src/overlay/inspector_overlay.dart' show SnoopOverlay, SnoopTab;
 export 'src/overlay/inspector_toggle.dart'
     show
         SnoopAction,
