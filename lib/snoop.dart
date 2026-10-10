@@ -25,3 +25,6 @@ export 'src/bloc/bloc_inspector_registry.dart'
     show BlocChangeRecord, BlocInspectorRegistry, TrackedBloc;
 export 'src/bloc/call_site.dart' show defaultIgnoredLocations;
 export 'src/bloc/inspector_bloc_observer.dart' show SnoopBlocObserver;
+export 'src/dio/dio_inspector_interceptor.dart' show SnoopDioInterceptor;
+export 'src/dio/dio_inspector_registry.dart'
+    show DioCallRecord, DioCallStats, DioEndpointStats, DioInspectorRegistry;
