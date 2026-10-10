@@ -1,0 +1,27 @@
+/// A debug-only, in-app dev-tools overlay for Flutter apps that use
+/// `flutter_bloc` and `dio`, with optional log and navigation recorders.
+///
+/// Three pieces to wire up, two optional:
+///
+/// ```dart
+/// void main() {
+///   Bloc.observer = SnoopBlocObserver();
+///   dio.interceptors.insert(0, SnoopDioInterceptor());
+///   runApp(
+///     MaterialApp(
+///       builder: (context, child) => SnoopOverlay(child: child!),
+///       navigatorObservers: [SnoopRouteObserver()], // optional: Routes tab
+///       home: const HomePage(),
+///     ),
+///   );
+/// }
+///
+/// // optional: Logs tab
+/// Snoop.logs.log('Signed in', level: SnoopLogLevel.info, source: 'AuthBloc');
+/// ```
+library;
+
+export 'src/bloc/bloc_inspector_registry.dart'
+    show BlocChangeRecord, BlocInspectorRegistry, TrackedBloc;
+export 'src/bloc/call_site.dart' show defaultIgnoredLocations;
+export 'src/bloc/inspector_bloc_observer.dart' show SnoopBlocObserver;
