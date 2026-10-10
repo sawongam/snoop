@@ -33,3 +33,6 @@ export 'src/logs/log_inspector_registry.dart'
     show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;
 export 'src/routes/route_inspector_registry.dart'
     show SnoopRouteAction, SnoopRouteObserver, SnoopRouteRecord, RouteInspectorRegistry;
+export 'src/widgets/inspector_shared.dart' show snoopCopy;
+export 'src/widgets/state_tree_view.dart' show StateTreeView;
+export 'src/widgets/value_sheet.dart' show showValueSheet;
