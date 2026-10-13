@@ -5,7 +5,7 @@ import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
 import 'package:snoop/src/widgets/state_tree_view.dart';
 
-/// The BLoC tab: a searchable list of live blocs and cubits. Tapping one
+/// The Bloc tab: a searchable list of live blocs and cubits. Tapping one
 /// pushes its detail page: current state, last error and change history.
 class BlocInspectorView extends StatelessWidget {
   /// Creates the view.

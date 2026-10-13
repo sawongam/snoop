@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/snoop.svg)](https://pub.dev/packages/snoop)
 ![Publisher](https://img.shields.io/badge/Publisher-sawongam-blue.svg)
 
-**A Flutter BLoC & Dio inspector that lives inside your app.**
+**A Flutter Bloc & Dio inspector that lives inside your app.**
 
 Snoop is a debug-only dev-tools overlay for Flutter apps built with
 [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) and [`dio`](https://pub.dev/packages/dio).
@@ -28,7 +28,7 @@ the device, without switching to DevTools.
   and only then reaches your app.
 - **Header controls**: search the current tab, **clear all** recorded data, toggle the bubble,
   close.
-- **BLoC tab**
+- **Bloc tab**
   - Lists every live bloc and cubit, with search. Tap one to open its detail page.
   - Shows the current state as an expandable tree, using `toJson()` field names or Equatable
     `props`.

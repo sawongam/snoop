@@ -39,7 +39,7 @@ enum SnoopTab {
 
   /// Tab label with its live count.
   String get label => switch (this) {
-    SnoopTab.bloc => 'BLoC ${BlocInspectorRegistry.instance.count}',
+    SnoopTab.bloc => 'Bloc ${BlocInspectorRegistry.instance.count}',
     SnoopTab.dio => 'Dio ${DioInspectorRegistry.instance.count}',
     SnoopTab.logs => 'Logs ${LogInspectorRegistry.instance.count}',
     SnoopTab.routes => 'Routes ${RouteInspectorRegistry.instance.count}',
@@ -47,7 +47,7 @@ enum SnoopTab {
 }
 
 /// An in-app dev-tools overlay: a draggable edge bubble that opens the
-/// inspector as a modal bottom sheet with BLoC, Dio, Logs and Routes tabs.
+/// inspector as a modal bottom sheet with Bloc, Dio, Logs and Routes tabs.
 ///
 /// Mount it through `MaterialApp.builder`:
 ///

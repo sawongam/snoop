@@ -1,6 +1,6 @@
 name: snoop
 description: >-
-  In-app debug inspector for Flutter. Inspect live BLoC/Cubit state, Dio
+  In-app debug inspector for Flutter. Inspect live Bloc/Cubit state, Dio
   network requests, logs and navigation in a floating dev-tools overlay.
 version: 0.1.0
 homepage: https://github.com/sawongam/snoop

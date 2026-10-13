@@ -123,7 +123,7 @@ void main() {
     await tester.pump();
 
     await _openPanel(tester);
-    expect(find.text('BLoC 2'), findsOneWidget);
+    expect(find.text('Bloc 2'), findsOneWidget);
     expect(find.text('CounterCubit'), findsOneWidget);
     expect(find.text('CounterBloc'), findsOneWidget);
 
