@@ -42,7 +42,7 @@ the device, without switching to DevTools.
     per-endpoint table, slowest first.
   - Color-coded methods. Search by URL, method or status, and filter to All, Errors or Pending.
   - Copy a call as **cURL** or JSON, or copy every call as JSON.
-  - Header **redaction** for tokens and cookies.
+  - Header **redaction** for tokens and cookies, on by default.
 - **Logs tab** (optional). Feed your logger into `Snoop.logs` and read the last 500
   lines on the device, with level, source, error and stack trace.
 - **Routes tab** (optional). Add `SnoopRouteObserver` to see every push, pop, replace and
@@ -189,12 +189,17 @@ reachable. Values refresh after each tap, whenever any bloc emits, and whenever 
 
 ### Redacting secrets
 
+`authorization`, `cookie` and `set-cookie` are redacted by default. Passing `redactedHeaders`
+replaces that list, so spread the defaults in to add your own:
+
 ```dart
 SnoopDioInterceptor(
-  redactedHeaders: {'authorization', 'cookie', 'x-api-key'}, // case-insensitive
+  redactedHeaders: {...SnoopDioInterceptor.defaultRedactedHeaders, 'x-api-key'}, // case-insensitive
   shouldRecord: (options) => !options.path.startsWith('/health'),
 )
 ```
+
+Pass `redactedHeaders: {}` to see every header in full.
 
 Redaction happens when the call is recorded, so the raw value never reaches the inspector,
 including copy-as-cURL.

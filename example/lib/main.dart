@@ -11,12 +11,13 @@ void main() {
   Bloc.observer = SnoopBlocObserver(); // ①
 
   // The token is fake; it shows how redacted headers look in the Network tab.
+  // Authorization, Cookie and Set-Cookie are redacted by default.
   final dio = Dio(
     BaseOptions(
       baseUrl: 'https://jsonplaceholder.typicode.com',
       headers: <String, Object?>{'Authorization': 'Bearer demo-secret-token'},
     ),
-  )..interceptors.add(SnoopDioInterceptor(redactedHeaders: {'authorization'})); // ②
+  )..interceptors.add(SnoopDioInterceptor()); // ②
 
   runApp(DemoApp(dio: dio));
 }

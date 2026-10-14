@@ -19,11 +19,13 @@ class SnoopDioInterceptor extends Interceptor {
   /// Creates the interceptor.
   ///
   /// * [redactedHeaders] are header names (case-insensitive) whose values are
-  ///   replaced with `██ redacted ██`, e.g. `{'authorization', 'cookie'}`.
+  ///   replaced with `██ redacted ██`. Defaults to [defaultRedactedHeaders].
+  ///   Passing a set replaces the defaults, so spread them in to extend:
+  ///   `{...SnoopDioInterceptor.defaultRedactedHeaders, 'x-api-key'}`.
   /// * [shouldRecord] can skip calls, e.g. health checks or large downloads.
   SnoopDioInterceptor({
     this.enabled = kDebugMode,
-    Set<String> redactedHeaders = const <String>{},
+    Set<String> redactedHeaders = defaultRedactedHeaders,
     this.shouldRecord,
   }) : _redacted = redactedHeaders.map((h) => h.toLowerCase()).toSet();
 
@@ -34,6 +36,14 @@ class SnoopDioInterceptor extends Interceptor {
   final bool Function(RequestOptions options)? shouldRecord;
 
   final Set<String> _redacted;
+
+  /// Headers redacted when [redactedHeaders] isn't given, so tokens and
+  /// sessions stay out of copied cURL commands by default.
+  static const Set<String> defaultRedactedHeaders = <String>{
+    'authorization',
+    'cookie',
+    'set-cookie',
+  };
 
   /// Replacement shown for redacted header values.
   static const String redactedValue = '██ redacted ██';

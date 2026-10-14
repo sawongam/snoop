@@ -71,6 +71,34 @@ void main() {
     expect(headers.values, isNot(contains(contains('secret'))));
   });
 
+  test('redacts auth and cookie headers by default', () async {
+    final dio = fakeDio()..interceptors.add(SnoopDioInterceptor(enabled: true));
+
+    await dio.get<Object?>(
+      '/me',
+      options: Options(
+        headers: <String, Object?>{'Authorization': 'Bearer secret', 'Cookie': 'sid=secret'},
+      ),
+    );
+
+    final headers = registry.records.single.requestHeaders;
+    expect(headers['Authorization'], SnoopDioInterceptor.redactedValue);
+    expect(headers['Cookie'], SnoopDioInterceptor.redactedValue);
+    expect(headers.values, isNot(contains(contains('secret'))));
+  });
+
+  test('an empty redactedHeaders set disables redaction', () async {
+    final dio = fakeDio()
+      ..interceptors.add(SnoopDioInterceptor(enabled: true, redactedHeaders: <String>{}));
+
+    await dio.get<Object?>(
+      '/me',
+      options: Options(headers: <String, Object?>{'authorization': 'Bearer secret'}),
+    );
+
+    expect(registry.records.single.requestHeaders['authorization'], 'Bearer secret');
+  });
+
   test('flattens FormData and honours shouldRecord', () async {
     final dio = fakeDio()
       ..interceptors.add(
