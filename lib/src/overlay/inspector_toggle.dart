@@ -194,7 +194,7 @@ class _InspectorToggleBarState extends State<InspectorToggleBar> {
           child: Switch(
             value: value(context),
             activeThumbColor: Colors.white,
-            activeTrackColor: InspectorColors.accent,
+            activeTrackColor: InspectorColors.accentOf(context),
             onChanged: (v) {
               onChanged(context, v);
               _refresh();

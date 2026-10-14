@@ -48,12 +48,12 @@ the device, without switching to DevTools.
 - **Routes tab** (optional). Add `SnoopRouteObserver` to see every push, pop, replace and
   remove, with the arguments each route received.
 - **Custom quick actions.** Add a bar of switches, segmented controls and buttons for your own
-  debug controls: theme, feature flags, fake login and so on.
+  debug controls, such as feature flags, environment switches or a log-out button.
 - Everything is **copyable**. Copied values are also echoed to the `flutter run` console, so you
   can grab them on your computer.
 - Runs on **its own `Navigator`** with its own dark theme, so it works under
-  `MaterialApp.builder` (or with no `MaterialApp` at all), needs no navigator key, and never picks
-  up your app's theme.
+  `MaterialApp.builder` (or with no `MaterialApp` at all) and needs no navigator key. The only
+  thing it takes from your app's theme is its accent: your primary color.
 - Only three dependencies: `flutter`, `flutter_bloc` and `dio`.
 
 ## Getting started
@@ -78,7 +78,7 @@ void main() {
 }
 ```
 
-Tap the purple tab on the right edge to open the inspector.
+Tap the tab on the right edge to open the inspector.
 
 > **Insert the interceptor at index 0.** It then sees errors before any interceptor that
 > swallows them, and it still shows headers that later interceptors add (auth and so on).
@@ -145,6 +145,15 @@ Snoop.bubble.addListener(
 ```
 
 `SnoopOverlay.open(context)` still works while the bubble is hidden.
+
+### Accent color
+
+The bubble and the panel's highlights use your app's `colorScheme.primary`. On the dark panel
+it is lightened when needed so text stays readable. To use a different color:
+
+```dart
+SnoopOverlay(accentColor: Colors.teal, child: child!)
+```
 
 ### Custom quick actions
 
@@ -238,4 +247,4 @@ fields.
 
 A runnable demo is in [`example/`](example/lib/main.dart). It has a counter cubit, a posts bloc
 that uses Dio, a request that fails with a 404, redacted auth headers, log lines, a pushed route
-with arguments, `showValueSheet` on long-press, and custom toggles.
+with arguments and `showValueSheet` on long-press.

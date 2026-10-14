@@ -62,7 +62,8 @@ enum SnoopTab {
 ///
 /// The bubble and sheet live on the overlay's own [Navigator], above the
 /// app's, so they need no navigator key, float over every route and dialog,
-/// and use their own dark theme instead of the app's. While the sheet is open
+/// and use their own dark theme instead of the app's, tinted with the app's
+/// primary color (see [accentColor]). While the sheet is open
 /// the system back button closes it (or leaves a detail page) instead of
 /// popping the app's route.
 ///
@@ -78,6 +79,7 @@ class SnoopOverlay extends StatefulWidget {
     this.tabs = SnoopTab.values,
     this.initialBubbleTop,
     this.bubbleOnLeft = false,
+    this.accentColor,
     super.key,
   });
 
@@ -99,6 +101,11 @@ class SnoopOverlay extends StatefulWidget {
 
   /// Whether the bubble starts on the left edge instead of the right.
   final bool bubbleOnLeft;
+
+  /// Color of the bubble and the panel's highlights. Defaults to the app's
+  /// `colorScheme.primary`. Inside the dark panel it is lightened as needed
+  /// to stay readable.
+  final Color? accentColor;
 
   /// Opens the panel of the nearest [SnoopOverlay], if any, optionally
   /// on [tab].
@@ -300,6 +307,7 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
         // through to the app when only the bubble is shown.
         Positioned.fill(
           child: _InspectorTheme(
+            accent: widget.accentColor ?? Theme.of(context).colorScheme.primary,
             // Our navigator's "can pop" must not overwrite the app's in
             // `SystemNavigator.setFrameworkHandlesBack`.
             child: NotificationListener<NavigationNotification>(
@@ -340,17 +348,18 @@ class _BubbleRoute extends OverlayRoute<void> {
 }
 
 /// Supplies what the chrome needs regardless of where it is mounted: LTR
-/// directionality, the inspector's dark theme, and media query /
+/// directionality, the inspector's dark theme tinted with [accent], and media query /
 /// localizations fallbacks when used outside a `MaterialApp`.
 class _InspectorTheme extends StatelessWidget {
-  const _InspectorTheme({required this.child});
+  const _InspectorTheme({required this.accent, required this.child});
 
+  final Color accent;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     Widget result = Theme(
-      data: inspectorTheme,
+      data: inspectorTheme(accent),
       child: Directionality(textDirection: TextDirection.ltr, child: child),
     );
     if (Localizations.of<MaterialLocalizations>(context, MaterialLocalizations) == null) {
@@ -560,7 +569,7 @@ class _Bubble extends StatelessWidget {
         scale: dragging ? 1.06 : 1,
         duration: const Duration(milliseconds: 120),
         child: Material(
-          color: InspectorColors.bubble,
+          color: InspectorColors.bubbleOf(context),
           elevation: 6,
           borderRadius: onLeft
               ? const BorderRadius.only(topRight: r, bottomRight: r)
@@ -572,8 +581,12 @@ class _Bubble extends StatelessWidget {
               listenable: Snoop.listenable,
               builder: (context, _) => Stack(
                 children: <Widget>[
-                  const Center(
-                    child: Icon(Icons.bug_report_rounded, color: Colors.white, size: 20),
+                  Center(
+                    child: Icon(
+                      Icons.bug_report_rounded,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      size: 20,
+                    ),
                   ),
                   if (Snoop.errorCount > 0)
                     Positioned(
@@ -703,7 +716,7 @@ class _Header extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(14, 6, 4, 4),
     child: Row(
       children: <Widget>[
-        const Icon(Icons.bug_report_rounded, color: InspectorColors.accent, size: 20),
+        Icon(Icons.bug_report_rounded, color: InspectorColors.accentOf(context), size: 20),
         const SizedBox(width: 8),
         const Expanded(
           child: Text(
@@ -744,7 +757,7 @@ class _BubbleSwitch extends StatelessWidget {
           Icon(
             Icons.bubble_chart_outlined,
             size: 17,
-            color: isOn ? InspectorColors.accent : Colors.white38,
+            color: isOn ? InspectorColors.accentOf(context) : Colors.white38,
           ),
           SizedBox(
             height: 28,
@@ -753,7 +766,7 @@ class _BubbleSwitch extends StatelessWidget {
                 key: const ValueKey<String>('snoop.bubble_switch'),
                 value: isOn,
                 activeThumbColor: Colors.white,
-                activeTrackColor: InspectorColors.accent,
+                activeTrackColor: InspectorColors.accentOf(context),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 onChanged: (value) => Snoop.bubble.value = value,
               ),

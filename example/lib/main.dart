@@ -10,9 +10,13 @@ import 'package:snoop/snoop.dart';
 void main() {
   Bloc.observer = SnoopBlocObserver(); // ①
 
-  final dio = Dio(BaseOptions(baseUrl: 'https://jsonplaceholder.typicode.com'))
-    ..interceptors.insert(0, SnoopDioInterceptor(redactedHeaders: {'authorization'})) // ②
-    ..interceptors.add(AuthInterceptor());
+  // The token is fake; it shows how redacted headers look in the Network tab.
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://jsonplaceholder.typicode.com',
+      headers: <String, Object?>{'Authorization': 'Bearer demo-secret-token'},
+    ),
+  )..interceptors.add(SnoopDioInterceptor(redactedHeaders: {'authorization'})); // ②
 
   runApp(DemoApp(dio: dio));
 }
@@ -25,76 +29,25 @@ class DemoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => RepositoryProvider<Dio>.value(
     value: dio,
-    child: BlocProvider<ThemeCubit>(
-      create: (_) => ThemeCubit(),
-      child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, mode) => MaterialApp(
-          title: 'snoop demo',
-          themeMode: mode,
-          theme: ThemeData(colorSchemeSeed: Colors.indigo),
-          darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
-          // ③ Mount the overlay above every route.
-          builder: (context, child) => SnoopOverlay(toggles: _toggles, child: child!),
-          // ④ Optional: record navigation for the Routes tab.
-          navigatorObservers: <NavigatorObserver>[SnoopRouteObserver()],
-          home: const HomePage(),
-        ),
-      ),
+    child: MaterialApp(
+      title: 'snoop demo',
+      theme: ThemeData(colorSchemeSeed: Colors.indigo),
+      // ③ Mount the overlay above every route.
+      builder: (context, child) => SnoopOverlay(child: child!),
+      // ④ Optional: record navigation for the Routes tab.
+      navigatorObservers: <NavigatorObserver>[SnoopRouteObserver()],
+      home: const HomePage(),
     ),
   );
 }
-
-/// Quick actions shown at the top of the inspector panel.
-final List<SnoopToggle> _toggles = <SnoopToggle>[
-  SnoopSegmentedToggle<ThemeMode>(
-    label: 'Theme',
-    icon: Icons.brightness_6_outlined,
-    segments: const <(ThemeMode, String)>[
-      (ThemeMode.light, 'Light'),
-      (ThemeMode.dark, 'Dark'),
-      (ThemeMode.system, 'System'),
-    ],
-    value: (context) => context.read<ThemeCubit>().state,
-    onChanged: (context, mode) => context.read<ThemeCubit>().set(mode),
-  ),
-  SnoopToggle.switcher(
-    label: 'Signed in',
-    value: (_) => AuthInterceptor.token != null,
-    onChanged: (_, on) => AuthInterceptor.token = on ? 'demo-secret-token' : null,
-  ),
-  SnoopToggle.action(
-    label: 'Log a warning',
-    icon: Icons.warning_amber_rounded,
-    onTap: (_) =>
-        Snoop.logs.log('Cache is 3 days old', level: SnoopLogLevel.warning, source: 'Toggles'),
-  ),
-];
 
 /// ⑤ Optional: feed your logger into the Logs tab.
 void log(String message, {SnoopLogLevel level = SnoopLogLevel.info, Object? error}) =>
     Snoop.logs.log(message, level: level, source: 'PostsBloc', error: error);
 
-/// Adds an `Authorization` header when "signed in". Its value shows up
-/// redacted in the inspector.
-class AuthInterceptor extends Interceptor {
-  static String? token = 'demo-secret-token';
-
-  @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (token != null) options.headers['Authorization'] = 'Bearer $token';
-    handler.next(options);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Blocs
 // ---------------------------------------------------------------------------
-
-class ThemeCubit extends Cubit<ThemeMode> {
-  ThemeCubit() : super(ThemeMode.system);
-
-  void set(ThemeMode mode) => emit(mode);
-}
 
 class CounterCubit extends Cubit<int> {
   CounterCubit() : super(0);

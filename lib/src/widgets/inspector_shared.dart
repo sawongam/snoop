@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// The inspector's fixed dark palette. The inspector never reads the host
-/// app's theme, so it looks the same in every app.
+/// The inspector's dark palette. Only the accent follows the host app (see
+/// [accentOf]); everything else looks the same in every app.
 abstract final class InspectorColors {
   /// Dimmed backdrop behind the panel.
   static const Color backdrop = Color(0xCC000000);
@@ -19,11 +19,15 @@ abstract final class InspectorColors {
   /// Recessed background (source locations).
   static const Color sunken = Color(0xFF14141A);
 
-  /// Accent: labels, selection, methods.
-  static const Color accent = Color(0xFF9F7AEA);
+  /// Accent: labels, selection, switches. The host app's primary color (or
+  /// `SnoopOverlay.accentColor`), lightened to read on [panel].
+  static Color accentOf(BuildContext context) => Theme.of(context).colorScheme.primary;
 
-  /// Floating bubble fill.
-  static const Color bubble = Color(0xFF6C2BD9);
+  /// Floating bubble fill: the accent as given, not lightened.
+  static Color bubbleOf(BuildContext context) => Theme.of(context).colorScheme.primaryContainer;
+
+  /// Text and icons on [bubbleOf] and on accent fills.
+  static Color onAccentOf(BuildContext context) => Theme.of(context).colorScheme.onPrimary;
 
   /// 2xx and healthy blocs.
   static const Color success = Color(0xFF22C55E);
@@ -64,22 +68,45 @@ abstract final class InspectorColors {
   };
 }
 
-/// The inspector's own dark Material theme. The inspector never reads the
-/// host app's theme, so it looks the same in every app.
-final ThemeData inspectorTheme = ThemeData(
-  brightness: Brightness.dark,
-  colorScheme: const ColorScheme.dark(
-    primary: InspectorColors.accent,
-    surface: InspectorColors.panel,
-  ),
-  scaffoldBackgroundColor: InspectorColors.panel,
-  textSelectionTheme: TextSelectionThemeData(
-    cursorColor: InspectorColors.accent,
-    selectionColor: InspectorColors.accent.withValues(alpha: 0.4),
-    selectionHandleColor: InspectorColors.accent,
-  ),
-  tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 400)),
-);
+/// The inspector's own dark Material theme, tinted with [accent]. Apart from
+/// the accent the inspector never reads the host app's theme, so it looks the
+/// same in every app.
+ThemeData inspectorTheme(Color accent) {
+  final readable = _readableOnPanel(accent);
+  return ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.dark(
+      primary: readable,
+      onPrimary: _onColor(readable),
+      primaryContainer: accent,
+      onPrimaryContainer: _onColor(accent),
+      surface: InspectorColors.panel,
+    ),
+    scaffoldBackgroundColor: InspectorColors.panel,
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: readable,
+      selectionColor: readable.withValues(alpha: 0.4),
+      selectionHandleColor: readable,
+    ),
+    tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 400)),
+  );
+}
+
+/// [color], blended toward white until it has 4.5:1 contrast (WCAG AA) on
+/// the panel, so a dark brand color still works as text.
+Color _readableOnPanel(Color color) {
+  final minLuminance = 4.5 * (InspectorColors.panel.computeLuminance() + 0.05) - 0.05;
+  for (var i = 0; i <= 10; i++) {
+    final blended = Color.lerp(color, Colors.white, i / 10)!;
+    if (blended.computeLuminance() >= minLuminance) return blended;
+  }
+  return Colors.white;
+}
+
+Color _onColor(Color background) =>
+    ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+    ? Colors.white
+    : Colors.black;
 
 /// Monospace text style used for payloads.
 const TextStyle inspectorMono = TextStyle(
@@ -104,13 +131,15 @@ Widget inspectorLabel(String text, {VoidCallback? onCopy}) => Padding(
   child: Row(
     children: <Widget>[
       Flexible(
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: InspectorColors.accent,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+        child: Builder(
+          builder: (context) => Text(
+            text,
+            style: TextStyle(
+              color: InspectorColors.accentOf(context),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
       ),
@@ -241,16 +270,18 @@ Widget inspectorGlyph({
   VoidCallback? onTap,
   bool active = false,
   Key? key,
-}) => IconButton(
+}) => Builder(
   key: key,
-  visualDensity: VisualDensity.compact,
-  onPressed: onTap,
-  tooltip: tooltip,
-  iconSize: 19,
-  color: active ? InspectorColors.accent : Colors.white70,
-  disabledColor: Colors.white24,
-  style: active ? IconButton.styleFrom(backgroundColor: InspectorColors.card) : null,
-  icon: Icon(icon),
+  builder: (context) => IconButton(
+    visualDensity: VisualDensity.compact,
+    onPressed: onTap,
+    tooltip: tooltip,
+    iconSize: 19,
+    color: active ? InspectorColors.accentOf(context) : Colors.white70,
+    disabledColor: Colors.white24,
+    style: active ? IconButton.styleFrom(backgroundColor: InspectorColors.card) : null,
+    icon: Icon(icon),
+  ),
 );
 
 /// A small colored badge: an HTTP status, a log level, a navigation action.
@@ -478,7 +509,6 @@ class InspectorSearchField extends StatelessWidget {
         controller: controller,
         autofocus: autofocus,
         style: const TextStyle(color: Colors.white, fontSize: 12),
-        cursorColor: InspectorColors.accent,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           isDense: true,
@@ -537,12 +567,15 @@ class InspectorSegmented<T> extends StatelessWidget {
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
       children: <Widget>[
         for (final (segment, label) in segments)
-          if (expand) Expanded(child: _segment(segment, label)) else _segment(segment, label),
+          if (expand)
+            Expanded(child: _segment(context, segment, label))
+          else
+            _segment(context, segment, label),
       ],
     ),
   );
 
-  Widget _segment(T segment, String label) {
+  Widget _segment(BuildContext context, T segment, String label) {
     final selected = segment == value;
     return InkWell(
       onTap: selected ? null : () => onChanged(segment),
@@ -551,7 +584,7 @@ class InspectorSegmented<T> extends StatelessWidget {
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? InspectorColors.accent : Colors.transparent,
+          color: selected ? InspectorColors.accentOf(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
@@ -560,7 +593,7 @@ class InspectorSegmented<T> extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.white54,
+            color: selected ? InspectorColors.onAccentOf(context) : Colors.white54,
             fontSize: 11,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
           ),

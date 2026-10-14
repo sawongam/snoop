@@ -44,7 +44,6 @@ class StateTreeView extends StatelessWidget {
   );
 }
 
-const Color _keyColor = InspectorColors.accent;
 const Color _stringColor = InspectorColors.success;
 const Color _numColor = InspectorColors.event;
 const Color _boolColor = Color(0xFFF472B6);
@@ -184,7 +183,7 @@ class _TreeNodeState extends State<_TreeNode> {
         if (widget.label != null)
           TextSpan(
             text: '${widget.label}: ',
-            style: const TextStyle(color: _keyColor, fontWeight: FontWeight.w600),
+            style: TextStyle(color: InspectorColors.accentOf(context), fontWeight: FontWeight.w600),
           ),
         if (children != null && children.isNotEmpty)
           TextSpan(text: _typeLabel(widget.value, children.length), style: _type)

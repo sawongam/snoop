@@ -18,6 +18,8 @@ Widget _app({
   home: home,
 );
 
+const Color _amber = Color(0xFFFFC107);
+
 final Finder _bubble = find.byKey(const ValueKey<String>('snoop.bubble'));
 final Finder _bubbleSwitch = find.byKey(const ValueKey<String>('snoop.bubble_switch'));
 
@@ -339,6 +341,36 @@ void main() {
     expect(flag, isTrue);
     expect(mode, ThemeMode.dark);
     expect(tester.widget<Switch>(mockSwitch).value, isTrue);
+  });
+
+  testWidgets('accent follows the app primary, lightened on the panel', (tester) async {
+    Color bubbleColor() => tester
+        .widget<Material>(find.descendant(of: _bubble, matching: find.byType(Material)))
+        .color!;
+    Color panelAccent() => Theme.of(tester.element(find.text('Snoop'))).colorScheme.primary;
+
+    const dark = Color(0xFF1A237E);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(colorScheme: const ColorScheme.light(primary: dark)),
+        builder: (context, child) => SnoopOverlay(enabled: true, child: child!),
+        home: const Scaffold(body: Text('home')),
+      ),
+    );
+    expect(bubbleColor(), dark);
+    await _openPanel(tester);
+    expect(panelAccent(), isNot(dark));
+    expect(panelAccent().computeLuminance(), greaterThan(dark.computeLuminance()));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) =>
+            SnoopOverlay(enabled: true, accentColor: _amber, child: child!),
+        home: const Scaffold(body: Text('home')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(panelAccent(), _amber);
   });
 
   testWidgets('SnoopOverlay.open works from app code', (tester) async {

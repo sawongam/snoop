@@ -29,8 +29,8 @@ Future<void> showValueSheet({
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
   ),
-  builder: (context) => Theme(
-    data: inspectorTheme,
+  builder: (_) => Theme(
+    data: inspectorTheme(Theme.of(context).colorScheme.primary),
     child: FractionallySizedBox(
       heightFactor: 0.85,
       child: _ValueSheetBody(title: title, value: value),
