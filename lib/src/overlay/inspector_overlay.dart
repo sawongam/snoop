@@ -15,13 +15,18 @@ import 'package:snoop/src/routes/route_inspector_view.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
 
+/// Called when the user drops the bubble, with values that can be passed
+/// back as [SnoopOverlay.initialBubbleAlignment] and
+/// [SnoopOverlay.bubbleOnLeft] to restore the spot.
+typedef SnoopBubbleMoved = void Function(double alignment, bool onLeft);
+
 /// The inspectors the panel can show.
 enum SnoopTab {
-  /// Live blocs and cubits.
-  bloc,
-
   /// Recorded Dio calls.
   dio,
+
+  /// Live blocs and cubits.
+  bloc,
 
   /// Recorded log lines.
   logs,
@@ -31,16 +36,16 @@ enum SnoopTab {
 
   /// Placeholder for this tab's search field.
   String get searchHint => switch (this) {
-    SnoopTab.bloc => 'Filter live blocs',
     SnoopTab.dio => 'URL, method or status',
+    SnoopTab.bloc => 'Filter live blocs',
     SnoopTab.logs => 'Message, source or error',
     SnoopTab.routes => 'Route name',
   };
 
   /// Tab label with its live count.
   String get label => switch (this) {
-    SnoopTab.bloc => 'Bloc ${BlocInspectorRegistry.instance.count}',
     SnoopTab.dio => 'Dio ${DioInspectorRegistry.instance.count}',
+    SnoopTab.bloc => 'Bloc ${BlocInspectorRegistry.instance.count}',
     SnoopTab.logs => 'Logs ${LogInspectorRegistry.instance.count}',
     SnoopTab.routes => 'Routes ${RouteInspectorRegistry.instance.count}',
   };
@@ -77,11 +82,16 @@ class SnoopOverlay extends StatefulWidget {
     this.enabled = kDebugMode,
     this.toggles = const <SnoopToggle>[],
     this.tabs = SnoopTab.values,
-    this.initialBubbleTop,
+    this.initialBubbleAlignment = 0.62,
     this.bubbleOnLeft = false,
     this.accentColor,
+    this.onBubbleMoved,
+    this.onBubbleVisibilityChanged,
     super.key,
-  });
+  }) : assert(
+         initialBubbleAlignment >= 0 && initialBubbleAlignment <= 1,
+         'initialBubbleAlignment must be between 0.0 and 1.0',
+       );
 
   /// The app.
   final Widget child;
@@ -89,15 +99,26 @@ class SnoopOverlay extends StatefulWidget {
   /// Whether the overlay is shown. Defaults to [kDebugMode].
   final bool enabled;
 
-  /// Custom quick actions shown at the top of the panel.
+  /// Your own debug controls, shown in a bar at the top of the panel: a
+  /// button ([SnoopToggle.action]), an on/off switch
+  /// ([SnoopToggle.switcher]) or a choice of options
+  /// ([SnoopSegmentedToggle]). Handy for flipping theme, locale, feature
+  /// flags or a fake login while testing. Empty (the default) hides the bar.
+  ///
+  /// See [SnoopToggle] for how values stay in sync.
   final List<SnoopToggle> toggles;
 
   /// Which inspectors to show, in order. Empty means all.
   final List<SnoopTab> tabs;
 
-  /// Initial distance of the bubble from the top of the screen. Defaults to
-  /// a little below the middle, clear of app bars and bottom navigation.
-  final double? initialBubbleTop;
+  /// Where the bubble starts vertically, from `0.0` (top) to `1.0` (bottom)
+  /// of the area it can move in: the screen minus the status bar, the
+  /// bottom system bar or keyboard, and an 8px gutter at each end.
+  ///
+  /// Defaults to `0.62`, a little below the middle, clear of app bars and
+  /// bottom navigation. Once the bubble has been dragged it stays where it
+  /// was dropped.
+  final double initialBubbleAlignment;
 
   /// Whether the bubble starts on the left edge instead of the right.
   final bool bubbleOnLeft;
@@ -106,6 +127,32 @@ class SnoopOverlay extends StatefulWidget {
   /// `colorScheme.primary`. Inside the dark panel it is lightened as needed
   /// to stay readable.
   final Color? accentColor;
+
+  /// Called when the user drops the bubble after dragging it, once it has
+  /// snapped to an edge. `alignment` (0.0 to 1.0) and `onLeft` match
+  /// [initialBubbleAlignment] and [bubbleOnLeft], so saving them and passing
+  /// them back on the next launch puts the bubble where it was left:
+  ///
+  /// ```dart
+  /// SnoopOverlay(
+  ///   initialBubbleAlignment: prefs.getDouble('snoop.y') ?? 0.62,
+  ///   bubbleOnLeft: prefs.getBool('snoop.left') ?? false,
+  ///   onBubbleMoved: (alignment, onLeft) {
+  ///     prefs.setDouble('snoop.y', alignment);
+  ///     prefs.setBool('snoop.left', onLeft);
+  ///   },
+  ///   child: child!,
+  /// )
+  /// ```
+  final SnoopBubbleMoved? onBubbleMoved;
+
+  /// Called with the new value whenever the bubble is hidden or shown: by a
+  /// long-press on it, its undo toast, the switch in the panel header, or
+  /// code setting [Snoop.bubble].
+  ///
+  /// To restore the choice on the next launch, save it here and seed
+  /// [Snoop.bubble] before `runApp`.
+  final ValueChanged<bool>? onBubbleVisibilityChanged;
 
   /// Opens the panel of the nearest [SnoopOverlay], if any, optionally
   /// on [tab].
@@ -168,6 +215,12 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
   List<SnoopTab> get _tabs => widget.tabs.isEmpty ? SnoopTab.values : widget.tabs;
 
   @override
+  void initState() {
+    super.initState();
+    Snoop.bubble.addListener(_bubbleVisibilityChanged);
+  }
+
+  @override
   void didUpdateWidget(SnoopOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.enabled && !widget.enabled) _close();
@@ -175,6 +228,7 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
 
   @override
   void dispose() {
+    Snoop.bubble.removeListener(_bubbleVisibilityChanged);
     _releaseBack();
     _session.dispose();
     _isOpen.dispose();
@@ -226,6 +280,12 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
   }
 
   void _close() => _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+
+  // Read `widget` at call time: the bubble's overlay entry is built once and
+  // would otherwise keep the first callbacks.
+  void _bubbleVisibilityChanged() => widget.onBubbleVisibilityChanged?.call(Snoop.bubble.value);
+
+  void _bubbleMoved(double alignment, bool onLeft) => widget.onBubbleMoved?.call(alignment, onLeft);
 
   // --- System back -----------------------------------------------------------
 
@@ -320,9 +380,10 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
                     _BubbleRoute(
                       builder: (_) => _BubbleLayer(
                         isOpen: _isOpen,
-                        initialTop: widget.initialBubbleTop,
+                        alignment: widget.initialBubbleAlignment,
                         startOnLeft: widget.bubbleOnLeft,
                         onTap: _open,
+                        onMoved: _bubbleMoved,
                       ),
                     ),
                   ],
@@ -384,15 +445,17 @@ class _InspectorTheme extends StatelessWidget {
 class _BubbleLayer extends StatefulWidget {
   const _BubbleLayer({
     required this.isOpen,
-    required this.initialTop,
+    required this.alignment,
     required this.startOnLeft,
     required this.onTap,
+    required this.onMoved,
   });
 
   final ValueListenable<bool> isOpen;
-  final double? initialTop;
+  final double alignment;
   final bool startOnLeft;
   final VoidCallback onTap;
+  final SnoopBubbleMoved onMoved;
 
   @override
   State<_BubbleLayer> createState() => _BubbleLayerState();
@@ -402,10 +465,6 @@ class _BubbleLayerState extends State<_BubbleLayer> {
   static const double _width = 40;
   static const double _height = 48;
   static const double _gutter = 8;
-
-  /// Fraction of the free height the bubble starts at when no
-  /// `initialBubbleTop` was given.
-  static const double _defaultAlignment = 0.62;
 
   late final Listenable _changes = Listenable.merge(<Listenable>[Snoop.bubble, widget.isOpen]);
 
@@ -482,7 +541,7 @@ class _BubbleLayerState extends State<_BubbleLayer> {
       _position ??
           Offset(
             widget.startOnLeft ? bounds.left : bounds.right,
-            widget.initialTop ?? bounds.top + bounds.height * _defaultAlignment,
+            bounds.top + bounds.height * widget.alignment,
           ),
       bounds,
     );
@@ -503,10 +562,17 @@ class _BubbleLayerState extends State<_BubbleLayer> {
             onPanStart: (_) => setState(() => _drag = resting),
             onPanUpdate: (d) =>
                 setState(() => _drag = _clamp((_drag ?? resting) + d.delta, bounds)),
-            onPanEnd: (_) => setState(() {
-              _position = _snap(_drag ?? resting, bounds);
-              _drag = null;
-            }),
+            onPanEnd: (_) {
+              final position = _snap(_drag ?? resting, bounds);
+              setState(() {
+                _position = position;
+                _drag = null;
+              });
+              widget.onMoved(
+                bounds.height > 0 ? (position.dy - bounds.top) / bounds.height : 0,
+                position.dx == bounds.left,
+              );
+            },
             onPanCancel: () => setState(() => _drag = null),
             child: _Bubble(width: _width, height: _height, onLeft: onLeft, dragging: _drag != null),
           ),

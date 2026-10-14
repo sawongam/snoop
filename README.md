@@ -218,8 +218,10 @@ IconButton(
 | Option | Default | Description |
 | --- | --- | --- |
 | `SnoopOverlay.enabled` | `kDebugMode` | Show the overlay. Set it to `true` for profile or internal builds. |
-| `SnoopOverlay.tabs` | all four | Which tabs to show and in what order, e.g. `[SnoopTab.bloc, SnoopTab.dio]`. |
-| `SnoopOverlay.initialBubbleTop` / `bubbleOnLeft` | a little below the middle / `false` | Where the bubble starts. |
+| `SnoopOverlay.tabs` | all four | Which tabs to show and in what order, e.g. `[SnoopTab.dio, SnoopTab.bloc]`. |
+| `SnoopOverlay.initialBubbleAlignment` / `bubbleOnLeft` | `0.62` / `false` | Where the bubble starts: `0.0` is the top of the screen (just below the status bar), `1.0` the bottom (just above the system bar or keyboard). Dragging it overrides this. |
+| `SnoopOverlay.onBubbleMoved` | none | Called with `(alignment, onLeft)` when the bubble is dropped. Save both and pass them back as `initialBubbleAlignment` / `bubbleOnLeft` to keep its spot across launches. |
+| `SnoopOverlay.onBubbleVisibilityChanged` | none | Called with `true`/`false` when the bubble is shown or hidden (long-press, undo, the header switch, or `Snoop.bubble`). |
 | `SnoopBlocObserver.captureCallSites` | `true` | Resolve creation and dispatch sites (one stack capture per bloc and per event). |
 | `SnoopBlocObserver.logEvents` / `logErrors` | `false` / `true` | Print to the console. |
 | `Snoop.bloc.maxHistory` | `50` | Changes kept per bloc. |

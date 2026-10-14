@@ -67,18 +67,18 @@ void main() {
     await tester.pumpWidget(_app());
 
     await _openPanel(tester);
-    expect(find.text('No live blocs'), findsOneWidget);
+    expect(find.text('No calls recorded'), findsOneWidget);
     expect(_bubble, findsNothing);
 
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
-    expect(find.text('No live blocs'), findsNothing);
+    expect(find.text('No calls recorded'), findsNothing);
     expect(_bubble, findsOneWidget);
 
     await _openPanel(tester);
     await tester.tapAt(const Offset(10, 10)); // Scrim, above the sheet.
     await tester.pumpAndSettle();
-    expect(find.text('No live blocs'), findsNothing);
+    expect(find.text('No calls recorded'), findsNothing);
     expect(_bubble, findsOneWidget);
   });
 
@@ -93,6 +93,79 @@ void main() {
     await tester.drag(_bubble, Offset(width * 0.3, 0));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(_bubble).dx, 0);
+  });
+
+  testWidgets('onBubbleMoved reports a spot that restores the bubble', (tester) async {
+    final moves = <(double, bool)>[];
+    Widget app({double alignment = 0.62, bool onLeft = false}) => MaterialApp(
+      key: UniqueKey(),
+      builder: (context, child) => SnoopOverlay(
+        enabled: true,
+        initialBubbleAlignment: alignment,
+        bubbleOnLeft: onLeft,
+        onBubbleMoved: (a, l) => moves.add((a, l)),
+        child: child!,
+      ),
+      home: const Scaffold(body: Text('home')),
+    );
+    final width = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+
+    await tester.pumpWidget(app());
+    await tester.drag(_bubble, Offset(-width * 0.8, -150));
+    await tester.pumpAndSettle();
+    final dropped = tester.getTopLeft(_bubble);
+    expect(moves, hasLength(1));
+    final (alignment, onLeft) = moves.single;
+    expect(onLeft, isTrue);
+    expect(alignment, inInclusiveRange(0, 1));
+
+    await tester.pumpWidget(app(alignment: alignment, onLeft: onLeft));
+    expect(tester.getTopLeft(_bubble).dx, dropped.dx);
+    expect(tester.getTopLeft(_bubble).dy, closeTo(dropped.dy, 0.01));
+  });
+
+  testWidgets('onBubbleVisibilityChanged fires for every way of hiding', (tester) async {
+    final changes = <bool>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) =>
+            SnoopOverlay(enabled: true, onBubbleVisibilityChanged: changes.add, child: child!),
+        home: const Scaffold(body: Text('home')),
+      ),
+    );
+
+    await tester.longPress(_bubble);
+    await tester.pump();
+    await tester.tap(find.text('UNDO'));
+    await tester.pump();
+    expect(changes, <bool>[false, true]);
+
+    await _openPanel(tester);
+    await tester.tap(_bubbleSwitch);
+    await tester.pump();
+    expect(changes, <bool>[false, true, false]);
+
+    Snoop.bubble.value = true;
+    expect(changes, <bool>[false, true, false, true]);
+  });
+
+  testWidgets('initialBubbleAlignment spans top to bottom of the free area', (tester) async {
+    Future<double> topAt(double alignment) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          key: UniqueKey(),
+          builder: (context, child) =>
+              SnoopOverlay(enabled: true, initialBubbleAlignment: alignment, child: child!),
+          home: const Scaffold(body: Text('home')),
+        ),
+      );
+      return tester.getTopLeft(_bubble).dy;
+    }
+
+    final height = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(await topAt(0), 8); // Gutter below the (empty) status bar.
+    expect(await topAt(1), height - 8 - 48); // Gutter, bubble height.
+    expect(await topAt(0.5), closeTo((8 + height - 56) / 2, 0.01));
   });
 
   testWidgets('long-press hides the bubble, with undo and the header switch', (tester) async {
@@ -125,7 +198,8 @@ void main() {
     await tester.pump();
 
     await _openPanel(tester);
-    expect(find.text('Bloc 2'), findsOneWidget);
+    await tester.tap(find.text('Bloc 2'));
+    await tester.pumpAndSettle();
     expect(find.text('CounterCubit'), findsOneWidget);
     expect(find.text('CounterBloc'), findsOneWidget);
 
@@ -253,14 +327,14 @@ void main() {
   testWidgets('keeps the tab and search across close and reopen', (tester) async {
     await tester.pumpWidget(_app());
     await _openPanel(tester);
-    await tester.tap(find.text('Dio 0'));
+    await tester.tap(find.text('Bloc 0'));
     await tester.pumpAndSettle();
     await _search(tester, 'menu');
 
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     await _openPanel(tester);
-    expect(find.text('No calls recorded'), findsOneWidget);
+    expect(find.text('No live blocs'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'menu'), findsOneWidget);
   });
 
@@ -283,6 +357,8 @@ void main() {
     await tester.pump();
 
     await _openPanel(tester);
+    await tester.tap(find.text('Bloc 1'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('CounterCubit'));
     await tester.pumpAndSettle();
     expect(find.text('CURRENT STATE'), findsOneWidget);
@@ -402,7 +478,7 @@ void main() {
     await tester.pump();
 
     await _openPanel(tester);
-    for (final tab in <String>['Dio 1', 'Logs 0', 'Routes 0']) {
+    for (final tab in <String>['Bloc 0', 'Logs 0', 'Routes 0']) {
       await tester.tap(find.text(tab));
       await tester.pumpAndSettle();
     }
@@ -422,6 +498,8 @@ void main() {
     await tester.pump();
 
     await _openPanel(tester);
+    await tester.tap(find.text('Bloc 1'));
+    await tester.pumpAndSettle();
     await _search(tester, 'x');
     expect(find.text('No blocs match "x"'), findsOneWidget);
 
