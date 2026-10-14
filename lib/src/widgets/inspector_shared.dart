@@ -50,22 +50,30 @@ abstract final class InspectorColors {
   /// Source location text.
   static const Color linkText = Color(0xFF9DB4D0);
 
-  /// PATCH requests.
-  static const Color violet = Color(0xFFA78BFA);
-
   /// Dividers.
   static const Color divider = Colors.white12;
 
-  /// Text color for an HTTP method, following Swagger UI's convention: GET
-  /// blue, POST green, PUT orange, DELETE red, PATCH violet.
+  /// Text color for an HTTP method, using Swagger UI's palette: GET blue,
+  /// POST green, PUT orange, DELETE red, PATCH teal, HEAD purple, OPTIONS
+  /// navy. Colors too dark to read on [panel] (HEAD, OPTIONS) are lightened.
   static Color method(String method) => switch (method.toUpperCase()) {
-    'GET' => info,
-    'POST' => success,
-    'PUT' => warning,
-    'DELETE' => error,
-    'PATCH' => violet,
+    'GET' => _get,
+    'POST' => _post,
+    'PUT' => _put,
+    'DELETE' => _delete,
+    'PATCH' => _patch,
+    'HEAD' => _head,
+    'OPTIONS' => _options,
     _ => Colors.white70,
   };
+
+  static final Color _get = _readableOnPanel(const Color(0xFF61AFFE));
+  static final Color _post = _readableOnPanel(const Color(0xFF49CC90));
+  static final Color _put = _readableOnPanel(const Color(0xFFFCA130));
+  static final Color _delete = _readableOnPanel(const Color(0xFFF93E3E));
+  static final Color _patch = _readableOnPanel(const Color(0xFF50E3C2));
+  static final Color _head = _readableOnPanel(const Color(0xFF9012FE));
+  static final Color _options = _readableOnPanel(const Color(0xFF0D5AA7));
 }
 
 /// The inspector's own dark Material theme, tinted with [accent]. Apart from
