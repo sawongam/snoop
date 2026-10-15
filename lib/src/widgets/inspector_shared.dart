@@ -168,7 +168,7 @@ Widget inspectorLabel(String text, {VoidCallback? onCopy}) => Padding(
 );
 
 /// A compact text + icon action, e.g. "Clear".
-Widget inspectorTextAction(String label, IconData icon, VoidCallback onTap) => InkWell(
+Widget inspectorTextAction(String label, Widget icon, VoidCallback onTap) => InkWell(
   onTap: onTap,
   borderRadius: BorderRadius.circular(4),
   child: Padding(
@@ -176,7 +176,10 @@ Widget inspectorTextAction(String label, IconData icon, VoidCallback onTap) => I
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: 15, color: Colors.white54),
+        IconTheme(
+          data: const IconThemeData(size: 15, color: Colors.white54),
+          child: icon,
+        ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
       ],
@@ -185,7 +188,7 @@ Widget inspectorTextAction(String label, IconData icon, VoidCallback onTap) => I
 );
 
 /// A monospace `path:line` chip used for source locations.
-Widget inspectorSourceLine(IconData icon, String location) => Padding(
+Widget inspectorSourceLine(Widget icon, String location) => Padding(
   padding: const EdgeInsets.only(top: 5),
   child: Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
@@ -196,7 +199,10 @@ Widget inspectorSourceLine(IconData icon, String location) => Padding(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(icon, size: 13, color: InspectorColors.link),
+        IconTheme(
+          data: const IconThemeData(size: 13, color: InspectorColors.link),
+          child: icon,
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: SelectableText(
@@ -523,8 +529,11 @@ class InspectorSearchField extends StatelessWidget {
           isDense: true,
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-          prefixIcon: const Icon(Icons.search, size: 16, color: Colors.white38),
-          prefixIconConstraints: const BoxConstraints(minWidth: 30),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(left: 10, right: 8),
+            child: SnoopIcon.search(size: 14, color: Colors.white38),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
           suffixIcon: value.text.isEmpty
               ? null
               : GestureDetector(

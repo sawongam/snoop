@@ -135,7 +135,7 @@ class _BlocDetailPageState extends State<_BlocDetailPage> {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: <Widget>[
-        if (b.definedAt != null) inspectorSourceLine(Icons.code, b.definedAt!),
+        if (b.definedAt != null) inspectorSourceLine(const SnoopIcon.code(), b.definedAt!),
         const SizedBox(height: 8),
         inspectorField(
           'CURRENT STATE',
@@ -163,7 +163,7 @@ class _BlocDetailPageState extends State<_BlocDetailPage> {
             if (b.history.isNotEmpty)
               inspectorTextAction(
                 'Clear',
-                Icons.delete_sweep_outlined,
+                const SnoopIcon.trash(),
                 () => _registry.clearHistory(b.bloc),
               ),
           ],
@@ -205,7 +205,8 @@ class _HistoryTile extends StatelessWidget {
             style: const TextStyle(color: InspectorColors.event, fontSize: 11),
           ),
         ],
-        if (record.emittedFrom != null) inspectorSourceLine(Icons.north_east, record.emittedFrom!),
+        if (record.emittedFrom != null)
+          inspectorSourceLine(const Icon(Icons.north_east), record.emittedFrom!),
         const SizedBox(height: 2),
         StateTreeView(value: record.nextState, rootLabel: 'next', initiallyExpanded: false),
         StateTreeView(value: record.currentState, rootLabel: 'prev', initiallyExpanded: false),

@@ -81,6 +81,7 @@ class SnoopOverlay extends StatefulWidget {
   const SnoopOverlay({
     required this.child,
     this.enabled = kDebugMode,
+    this.title = 'Snoop Inspector',
     this.toggles = const <SnoopToggle>[],
     this.tabs = SnoopTab.values,
     this.initialBubbleAlignment = 0.62,
@@ -99,6 +100,9 @@ class SnoopOverlay extends StatefulWidget {
 
   /// Whether the overlay is shown. Defaults to [kDebugMode].
   final bool enabled;
+
+  /// Title shown at the top of the panel. Defaults to `Snoop Inspector`.
+  final String title;
 
   /// Your own debug controls, shown in a bar at the top of the panel: a
   /// button ([SnoopToggle.action]), an on/off switch
@@ -260,6 +264,7 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
               builder: (_) => _InspectorPanel(
                 session: _session,
                 tabs: _tabs,
+                title: widget.title,
                 toggles: widget.toggles,
                 onClose: _close,
               ),
@@ -684,12 +689,14 @@ class _InspectorPanel extends StatelessWidget {
   const _InspectorPanel({
     required this.session,
     required this.tabs,
+    required this.title,
     required this.toggles,
     required this.onClose,
   });
 
   final _Session session;
   final List<SnoopTab> tabs;
+  final String title;
   final List<SnoopToggle> toggles;
   final VoidCallback onClose;
 
@@ -708,6 +715,7 @@ class _InspectorPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _Header(
+                title: title,
                 showsSearch: showsSearch,
                 onSearch: () => session.toggleSearch(tab),
                 onClose: onClose,
@@ -771,8 +779,14 @@ class _InspectorPanel extends StatelessWidget {
 
 /// Title, the bubble switch, search, clear all, close.
 class _Header extends StatelessWidget {
-  const _Header({required this.showsSearch, required this.onSearch, required this.onClose});
+  const _Header({
+    required this.title,
+    required this.showsSearch,
+    required this.onSearch,
+    required this.onClose,
+  });
 
+  final String title;
   final bool showsSearch;
   final VoidCallback onSearch;
   final VoidCallback onClose;
@@ -782,19 +796,17 @@ class _Header extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(14, 6, 4, 4),
     child: Row(
       children: <Widget>[
-        SnoopIcon.bug(color: InspectorColors.accentOf(context), size: 20),
-        const SizedBox(width: 8),
-        const Expanded(
+        Expanded(
           child: Text(
-            'Snoop Inspector',
+            title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const _BubbleSwitch(),
         inspectorGlyph(
-          icon: const Icon(Icons.search),
+          icon: const SnoopIcon.search(),
           tooltip: 'Search',
           active: showsSearch,
           onTap: onSearch,
@@ -802,7 +814,7 @@ class _Header extends StatelessWidget {
         LiveBuilder(
           listenable: Snoop.listenable,
           builder: (context) => inspectorGlyph(
-            icon: const Icon(Icons.delete_sweep_outlined),
+            icon: const SnoopIcon.trash(),
             tooltip: 'Clear all records',
             onTap: Snoop.hasRecords ? Snoop.clearAll : null,
           ),
@@ -825,11 +837,7 @@ class _BubbleSwitch extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            Icons.bubble_chart_outlined,
-            size: 17,
-            color: isOn ? InspectorColors.accentOf(context) : Colors.white38,
-          ),
+          SnoopIcon.bug(size: 17, color: isOn ? InspectorColors.accentOf(context) : Colors.white38),
           SizedBox(
             height: 28,
             child: FittedBox(

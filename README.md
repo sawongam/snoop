@@ -146,6 +146,14 @@ Snoop.bubble.addListener(
 
 `SnoopOverlay.open(context)` still works while the bubble is hidden.
 
+### Panel title
+
+The panel header reads `Snoop Inspector`. Override it with `title`:
+
+```dart
+SnoopOverlay(title: 'Acme Debug', child: child!)
+```
+
 ### Accent color
 
 The bubble and the panel's highlights use your app's `colorScheme.primary`. On the dark panel

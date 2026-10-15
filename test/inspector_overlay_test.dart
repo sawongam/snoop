@@ -318,7 +318,9 @@ void main() {
     expect(find.text('Dio 0'), findsOneWidget);
     expect(
       tester
-          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.delete_sweep_outlined))
+          .widget<IconButton>(
+            find.byWidgetPredicate((w) => w is IconButton && w.tooltip == 'Clear all records'),
+          )
           .onPressed,
       isNull,
     );

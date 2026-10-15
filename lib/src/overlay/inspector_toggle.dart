@@ -182,7 +182,7 @@ class _InspectorToggleBarState extends State<InspectorToggleBar> {
     final Widget control = switch (toggle) {
       SnoopActionToggle(:final onTap) => inspectorTextAction(
         toggle.label,
-        toggle.icon ?? Icons.play_arrow_rounded,
+        Icon(toggle.icon ?? Icons.play_arrow_rounded),
         () {
           onTap(context);
           _refresh();
