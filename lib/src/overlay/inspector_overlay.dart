@@ -14,6 +14,7 @@ import 'package:snoop/src/routes/route_inspector_registry.dart';
 import 'package:snoop/src/routes/route_inspector_view.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
+import 'package:snoop/src/widgets/snoop_icon.dart';
 
 /// Called when the user drops the bubble, with values that can be passed
 /// back as [SnoopOverlay.initialBubbleAlignment] and
@@ -648,8 +649,7 @@ class _Bubble extends StatelessWidget {
               builder: (context, _) => Stack(
                 children: <Widget>[
                   Center(
-                    child: Icon(
-                      Icons.bug_report_rounded,
+                    child: SnoopIcon.bug(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                       size: 20,
                     ),
@@ -782,27 +782,32 @@ class _Header extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(14, 6, 4, 4),
     child: Row(
       children: <Widget>[
-        Icon(Icons.bug_report_rounded, color: InspectorColors.accentOf(context), size: 20),
+        SnoopIcon.bug(color: InspectorColors.accentOf(context), size: 20),
         const SizedBox(width: 8),
         const Expanded(
           child: Text(
-            'Snoop',
+            'Snoop Inspector',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const _BubbleSwitch(),
-        inspectorGlyph(icon: Icons.search, tooltip: 'Search', active: showsSearch, onTap: onSearch),
+        inspectorGlyph(
+          icon: const Icon(Icons.search),
+          tooltip: 'Search',
+          active: showsSearch,
+          onTap: onSearch,
+        ),
         LiveBuilder(
           listenable: Snoop.listenable,
           builder: (context) => inspectorGlyph(
-            icon: Icons.delete_sweep_outlined,
+            icon: const Icon(Icons.delete_sweep_outlined),
             tooltip: 'Clear all records',
             onTap: Snoop.hasRecords ? Snoop.clearAll : null,
           ),
         ),
-        inspectorGlyph(icon: Icons.close, tooltip: 'Close', onTap: onClose),
+        inspectorGlyph(icon: const Icon(Icons.close), tooltip: 'Close', onTap: onClose),
       ],
     ),
   );

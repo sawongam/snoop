@@ -423,7 +423,8 @@ void main() {
     Color bubbleColor() => tester
         .widget<Material>(find.descendant(of: _bubble, matching: find.byType(Material)))
         .color!;
-    Color panelAccent() => Theme.of(tester.element(find.text('Snoop'))).colorScheme.primary;
+    Color panelAccent() =>
+        Theme.of(tester.element(find.text('Snoop Inspector'))).colorScheme.primary;
 
     const dark = Color(0xFF1A237E);
     await tester.pumpWidget(

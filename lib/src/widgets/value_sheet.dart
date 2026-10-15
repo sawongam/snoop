@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
+import 'package:snoop/src/widgets/snoop_icon.dart';
 import 'package:snoop/src/widgets/state_tree_view.dart';
 
 /// Shows [value] in a dark bottom sheet as an expandable tree, with the raw
@@ -78,12 +79,12 @@ class _ValueSheetBodyState extends State<_ValueSheetBody> {
               onChanged: (raw) => setState(() => _raw = raw),
             ),
             inspectorGlyph(
-              icon: Icons.copy,
+              icon: const SnoopIcon.copy(),
               tooltip: 'Copy as JSON',
               onTap: () => snoopCopy(_pretty),
             ),
             inspectorGlyph(
-              icon: Icons.close,
+              icon: const Icon(Icons.close),
               tooltip: 'Close',
               onTap: () => Navigator.of(context).pop(),
             ),

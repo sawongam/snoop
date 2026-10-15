@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:snoop/src/widgets/snoop_icon.dart';
 
 /// The inspector's dark palette. Only the accent follows the host app (see
 /// [accentOf]); everything else looks the same in every app.
@@ -158,7 +159,7 @@ Widget inspectorLabel(String text, {VoidCallback? onCopy}) => Padding(
           borderRadius: BorderRadius.circular(4),
           child: const Padding(
             padding: EdgeInsets.all(2),
-            child: Icon(Icons.copy, size: 13, color: Colors.white38),
+            child: SnoopIcon.copy(size: 13, color: Colors.white38),
           ),
         ),
       ],
@@ -273,7 +274,7 @@ Widget inspectorNoMatches(String label) => Padding(
 
 /// A compact icon button for toolbars. A `null` [onTap] reads disabled.
 Widget inspectorGlyph({
-  required IconData icon,
+  required Widget icon,
   required String tooltip,
   VoidCallback? onTap,
   bool active = false,
@@ -288,7 +289,7 @@ Widget inspectorGlyph({
     color: active ? InspectorColors.accentOf(context) : Colors.white70,
     disabledColor: Colors.white24,
     style: active ? IconButton.styleFrom(backgroundColor: InspectorColors.card) : null,
-    icon: Icon(icon),
+    icon: icon,
   ),
 );
 
@@ -422,7 +423,7 @@ class InspectorDetailPage extends StatelessWidget {
               children: <Widget>[
                 const SizedBox(width: 4),
                 inspectorGlyph(
-                  icon: Icons.arrow_back,
+                  icon: const Icon(Icons.arrow_back),
                   tooltip: 'Back',
                   onTap: () => Navigator.of(context).maybePop(),
                 ),

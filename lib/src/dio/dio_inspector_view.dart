@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:snoop/src/dio/dio_inspector_registry.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
+import 'package:snoop/src/widgets/snoop_icon.dart';
 import 'package:snoop/src/widgets/state_tree_view.dart';
 
 enum _Filter { all, errors, pending }
@@ -104,7 +105,7 @@ class _DioInspectorViewState extends State<DioInspectorView> {
           ),
         ),
         inspectorGlyph(
-          icon: Icons.file_copy_outlined,
+          icon: const Icon(Icons.file_copy_outlined),
           tooltip: 'Copy all as JSON',
           onTap: () => snoopCopy(<Object?>[for (final r in records) r.toJson()]),
         ),
@@ -264,12 +265,12 @@ class _CallDetailPage extends StatelessWidget {
         title: r.shortPath,
         actions: <Widget>[
           inspectorGlyph(
-            icon: Icons.terminal,
+            icon: const Icon(Icons.terminal),
             tooltip: 'Copy as cURL',
             onTap: () => snoopCopy(buildCurl(r)),
           ),
           inspectorGlyph(
-            icon: Icons.copy,
+            icon: const SnoopIcon.copy(),
             tooltip: 'Copy call as JSON',
             onTap: () => snoopCopy(r.toJson()),
           ),

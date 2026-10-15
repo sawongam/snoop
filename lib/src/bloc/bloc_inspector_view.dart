@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:snoop/src/bloc/bloc_inspector_registry.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
+import 'package:snoop/src/widgets/snoop_icon.dart';
 import 'package:snoop/src/widgets/state_tree_view.dart';
 
 /// The Bloc tab: a searchable list of live blocs and cubits. Tapping one
@@ -116,7 +117,7 @@ class _BlocDetailPageState extends State<_BlocDetailPage> {
         title: b.name,
         actions: <Widget>[
           inspectorGlyph(
-            icon: Icons.copy,
+            icon: const SnoopIcon.copy(),
             tooltip: 'Copy current state',
             onTap: () => snoopCopy('${b.currentState}'),
           ),
