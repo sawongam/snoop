@@ -578,7 +578,7 @@ void main() {
 
     await tester.tap(find.text('DISPOSED (1)'));
     await tester.pump();
-    await tester.tap(find.text('GoneCubit'));
+    await tester.tap(find.textContaining('GoneCubit #'));
     await tester.pumpAndSettle();
     expect(find.text('CURRENT STATE'), findsOneWidget);
   });
@@ -639,5 +639,20 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(Snoop.panelOpen.value, isFalse);
+  });
+
+  testWidgets('live sources sharing a name show their ids', (tester) async {
+    await tester.pumpWidget(_app());
+    final a = trackFake(FakeSource(0));
+    final b = trackFake(FakeSource(0));
+    trackFake(FakeSource(0), name: 'Unique');
+    await tester.pump();
+
+    await _openPanel(tester);
+    await tester.tap(find.text('State 3'));
+    await tester.pumpAndSettle();
+    expect(find.text('CounterCubit #${a.id}'), findsOneWidget);
+    expect(find.text('CounterCubit #${b.id}'), findsOneWidget);
+    expect(find.text('Unique'), findsOneWidget);
   });
 }

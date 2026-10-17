@@ -35,7 +35,7 @@ final dio = Dio()..interceptors.insert(0, SnoopDioInterceptor(replayClient: dio)
 4. **Redirects**: `finalUri = response.realUri` when it differs from `uri`.
 5. **Request bytes**: `requestBytes` from the encoded body when it's a `String` or `List<int>`;
    otherwise `null`.
-6. **Conditions**: replace `appliesTo` + `rollFailure` with `Snoop.networkConditions.simulate`.
+6. **Conditions**: already on `Snoop.networkConditions.simulate` (step 0). Keep it.
 7. **An error resolved by a later interceptor** (`handler.resolve(response)` in `onError`):
    our `onError` already ran, so the record says failed while the app got a response. Detect it
    in `onResponse`: if the record is completed with an error, update it to the response and
@@ -57,12 +57,13 @@ final dio = Dio()..interceptors.insert(0, SnoopDioInterceptor(replayClient: dio)
 - [ ] retry interceptor → two records, `retryOf` set, first is not pending
 - [ ] later interceptor resolves an error → record ends as success with `recoveredFrom`
 - [ ] two Snoop interceptors on one Dio → one record
-- [ ] `shouldRecord` false → no record, but conditions still apply (document this)
+- [ ] `shouldRecord` false → no record and no simulation (conditions apply only to recorded
+      calls, the same rule as every adapter; document this)
 - [ ] `enabled: false` → no record, no simulation, `handler.next` called directly
 - [ ] simulated 401 goes through the app's error interceptors (token refresh path)
 - [ ] replay of a FormData call clones the form; replay of a stream body is disabled
 - [ ] redacted header is restored on replay
-- [ ] HAR export of a binary response has `"encoding": "base64"` only when bytes were kept
+- [ ] binary response (`ResponseType.bytes`, `image/png`) is recorded as `<binary, N kB>`
 
 Use `http_mock_adapter`-style fakes, or a custom `HttpClientAdapter` in `test/helpers`, so
 the tests never open sockets.

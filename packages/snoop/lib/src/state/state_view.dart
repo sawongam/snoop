@@ -50,10 +50,21 @@ class _StateInspectorViewState extends State<StateInspectorView> {
       final disposed = _registry.disposed.where((s) => s.matches(needle)).toList(growable: false);
       if (live.isEmpty && disposed.isEmpty) return inspectorNoMatches('Nothing matches "$needle"');
       final showLibrary = _registry.libraries.length > 1;
+      // Two live `CounterCubit`s read the same; their ids tell them apart.
+      final names = <String, int>{};
+      for (final s in _registry.live) {
+        names[s.name] = (names[s.name] ?? 0) + 1;
+      }
+      bool shared(SnoopStateSource s) => (names[s.name] ?? 0) > 1;
       return ListView(
         children: <Widget>[
           for (final s in live)
-            _SourceTile(source: s, showLibrary: showLibrary, onTap: () => _open(context, s)),
+            _SourceTile(
+              source: s,
+              showLibrary: showLibrary,
+              showId: shared(s),
+              onTap: () => _open(context, s),
+            ),
           if (disposed.isNotEmpty) ...<Widget>[
             InkWell(
               key: const ValueKey<String>('snoop.disposed'),
@@ -75,7 +86,12 @@ class _StateInspectorViewState extends State<StateInspectorView> {
             ),
             if (_showDisposed)
               for (final s in disposed)
-                _SourceTile(source: s, showLibrary: showLibrary, onTap: () => _open(context, s)),
+                _SourceTile(
+                  source: s,
+                  showLibrary: showLibrary,
+                  showId: true,
+                  onTap: () => _open(context, s),
+                ),
           ],
         ],
       );
@@ -84,10 +100,16 @@ class _StateInspectorViewState extends State<StateInspectorView> {
 }
 
 class _SourceTile extends StatelessWidget {
-  const _SourceTile({required this.source, required this.showLibrary, required this.onTap});
+  const _SourceTile({
+    required this.source,
+    required this.showLibrary,
+    required this.showId,
+    required this.onTap,
+  });
 
   final SnoopStateSource source;
   final bool showLibrary;
+  final bool showId;
   final VoidCallback onTap;
 
   @override
@@ -106,7 +128,11 @@ class _SourceTile extends StatelessWidget {
               : InspectorColors.success,
         ),
       ),
-      title: Text(source.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        showId ? '${source.name} #${source.id}' : source.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: inspectorMeta(<String>[
         source.kind,
         if (showLibrary) source.library,

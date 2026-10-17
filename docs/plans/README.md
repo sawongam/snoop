@@ -8,8 +8,7 @@ so each one repeats the context it needs.
 
 ```
 snoop/                       ← repo root (pub workspace + melos)
-├── pubspec.yaml             ← workspace root, publish_to: none
-├── melos.yaml               ← scripts: analyze, test, format, publish-dry-run
+├── pubspec.yaml             ← workspace root + melos config (scripts: analyze, test, format, dry-run)
 ├── packages/
 │   ├── snoop/               ← core: overlay, registries, views, export (flutter only)
 │   ├── snoop_dio/           ← Network: Dio interceptor (also covers Retrofit)
@@ -63,6 +62,42 @@ can be built in parallel (one implementer per adapter, each in its own git workt
 
 Toolchain on this machine: Flutter 3.47.0, melos installed. Core keeps
 `sdk: '>=3.10.0 <4.0.0'`, `flutter: '>=3.38.0'`.
+
+## Step 0 as built (read this before any adapter step)
+
+Step 0 is done (commit `4d6b815` and the one after it). The public API is in
+`packages/snoop/lib/snoop.dart`; read it rather than trusting the sketches in `00-core.md`.
+Differences from the plans and things worth knowing:
+
+- **`Snoop.state.markDisposed(key)`**, not `dispose(key)`: `SnoopStateRegistry` is a
+  `ChangeNotifier`, whose `dispose()` can't be overloaded. Other registry calls: `track`,
+  `change`, `error`, `noteEventOrigin`, `clearHistory`, `operator []`, `byId`, `live`,
+  `disposed`, `sources`, `debugCollect(source)` (tests of the weak/Finalizer path).
+- In snapshot mode the registry ignores the `previous` you pass and uses the last snapshot.
+  For `hasState: false` sources, record runs with `change(key, null, null, event: 'ran')`.
+- **Adapter registration**: call `SnoopAdapters.register(id, kind, ignoredLocations: [...])`
+  in the hook's constructor **only when `enabled`**. `Snoop.reset()` also forgets adapters,
+  so tests create the hook after `Snoop.reset()`.
+- **Call sites**: `SnoopCallSite.resolve(extra: perHookPrefixes)`. Library prefixes go in
+  `register(ignoredLocations:)`, not in `extra`.
+- **Network records**: `SnoopCallRecord(id: Snoop.network.nextId(), client: 'http', method,
+  uri, startedAt, requestBody, requestBytes, requestTruncated, replayOf, retryOf,
+  requestHeaders)`; mutable fields: `statusCode`, `responseBody`, `responseTruncated`,
+  `responseHeaders`, `responseBytes`, `finalUri`, `duration`, `error`, `errorType`,
+  `cancelled`, `completed`, `injectedFault`, `replayer`. Add with `Snoop.network.add(r)`,
+  call `Snoop.network.changed()` after mutating.
+- **Helpers**: `SnoopHeaders.flatten(headers, lowerCaseRedactedSet)`, `.unredact(edited,
+  sent)`, `.value(headers, name)`, `.defaultRedacted`, `.redactedValue`;
+  `SnoopBody.normalize(raw, contentType:)` → `({Object? body, bool truncated})`,
+  `SnoopBody.readableSize(bytes)`; `Snoop.networkConditions.simulate(uri)` →
+  `SnoopSimulation?` (`delay`, `fault`). Conditions apply only to calls the adapter records.
+- **Tabs**: Network/State tabs appear once an adapter of that kind registers. Tab labels
+  read `Network N` / `State N`; open a tab with `SnoopOverlay.open(context, tab: 'state')`.
+- **Workspace**: add your package to the root `pubspec.yaml` `workspace:` list (that line is
+  the only root edit allowed), give it `resolution: workspace`, depend on `snoop: ^0.1.0`.
+  Run `flutter pub get` at the repo root. Scripts: `~/.pub-cache/bin/melos run analyze|test|format`.
+- **Not available on this machine**: Linux desktop builds (no ninja/clang). Widget tests
+  cover the UI instead.
 
 ## Rules every step follows
 
