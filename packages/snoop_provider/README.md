@@ -1,5 +1,9 @@
 # snoop_provider
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
+
 [Provider](https://pub.dev/packages/provider) adapter for
 [snoop](https://pub.dev/packages/snoop). It works for any `ChangeNotifier`, `ValueNotifier` or
 other `Listenable`, with or without provider.

@@ -1,5 +1,9 @@
 # snoop_signals
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
+
 [Signals](https://pub.dev/packages/signals) adapter for
 [snoop](https://pub.dev/packages/snoop): every signal in the State tab, with its current value,
 history, diffs and the place that set it. It depends on `signals_core` only, so it works with

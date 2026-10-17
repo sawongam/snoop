@@ -1,5 +1,9 @@
 # snoop_http
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
+
 [package:http](https://pub.dev/packages/http) adapter for
 [snoop](https://pub.dev/packages/snoop). It wraps the `Client`, so every call made through it
 shows up in the Network tab, with replay and simulated network trouble.

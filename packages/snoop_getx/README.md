@@ -1,5 +1,9 @@
 # snoop_getx
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
+
 [GetX](https://pub.dev/packages/get) adapter for [snoop](https://pub.dev/packages/snoop):
 controller lifecycles, Rx values and `GetConnect` calls in the overlay.
 

@@ -5,7 +5,9 @@ with the network calls, live state, log lines and navigation history, so you don
 switch to DevTools. It records only in debug builds by default: in release builds the overlay
 returns your app untouched and the adapters record nothing.
 
-<!-- Screenshot or GIF of the panel goes here once a real capture exists. -->
+<p align="center">
+  <img src="docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
 
 Snoop is a core package plus one small adapter per library. The core depends only on Flutter.
 Add the adapters for the libraries your app uses.
@@ -100,7 +102,3 @@ dart run melos run test       # flutter test in packages that have tests
 dart run melos run format     # dart format --set-exit-if-changed .
 dart run melos run dry-run    # dart pub publish --dry-run for every package
 ```
-
-## License
-
-MIT. See the `LICENSE` file in each package.

@@ -337,6 +337,22 @@ void main() {
     expect(find.widgetWithText(TextField, 'menu'), findsOneWidget);
   });
 
+  testWidgets('search takes focus when tapped, not when the sheet reopens', (tester) async {
+    await tester.pumpWidget(_app());
+    await _openPanel(tester);
+    await tester.tap(find.text('State 0'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Search'));
+    await tester.pump();
+    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    await _openPanel(tester);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isFalse);
+  });
+
   testWidgets('system back closes the sheet, not the app route', (tester) async {
     final navigatorKey = GlobalKey<NavigatorState>();
     await tester.pumpWidget(
