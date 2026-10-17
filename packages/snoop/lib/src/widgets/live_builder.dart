@@ -42,7 +42,9 @@ class _LiveBuilderState extends State<LiveBuilder> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _visible = TickerMode.valuesOf(context).enabled;
+    // valuesOf needs Flutter 3.41; `of` is deprecated there but works everywhere.
+    // ignore: deprecated_member_use
+    _visible = TickerMode.of(context);
     // Becoming visible is a dependency change, which rebuilds us anyway and
     // picks up everything skipped while hidden.
   }
