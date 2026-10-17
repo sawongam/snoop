@@ -14,6 +14,7 @@ workspace:
   - packages/snoop_provider
   - packages/snoop_mobx
   - packages/snoop_signals
+  - packages/snoop_getx
   - apps/playground
 
 dev_dependencies:
