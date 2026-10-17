@@ -53,10 +53,6 @@ class SnoopHttpClient extends http.BaseClient {
 
   static const List<String> _ignored = <String>['package:http/', 'package:snoop_http/'];
 
-  /// Private header `snoop_chopper` sets on requests it already recorded, so
-  /// a Chopper client wrapped by this one doesn't record them twice.
-  static const String _recordedHeader = 'x-snoop-recorded';
-
   final http.Client _inner;
 
   /// Whether anything is recorded.
@@ -78,10 +74,8 @@ class SnoopHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final hasMarker = request.headers.containsKey(_recordedHeader);
-    final skipped = hasMarker || !enabled || !_wants(request);
-    final outgoing = hasMarker ? _withoutMarker(request) : request;
-    if (skipped) return _inner.send(outgoing);
+    // Another adapter up the stack (snoop_chopper) records this call.
+    if (!enabled || SnoopAdapters.isRecorded || !_wants(request)) return _inner.send(request);
 
     final record = _newRecord(request);
     Snoop.network.add(record);
@@ -96,7 +90,7 @@ class SnoopHttpClient extends http.BaseClient {
 
     final http.StreamedResponse response;
     try {
-      response = await _inner.send(outgoing);
+      response = await _inner.send(request);
     } on Object catch (e) {
       _recordFailure(record, e);
       rethrow;
@@ -107,24 +101,6 @@ class SnoopHttpClient extends http.BaseClient {
   bool _wants(http.BaseRequest request) {
     final check = shouldRecord;
     return check == null || (SnoopSafe.run(() => check(request)) ?? true);
-  }
-
-  /// [request] without the `x-snoop-recorded` header. Removed in place, or
-  /// from a copy when the headers can't be changed.
-  http.BaseRequest _withoutMarker(http.BaseRequest request) {
-    try {
-      request.headers.remove(_recordedHeader);
-      return request;
-    } on Object {
-      if (request is! http.Request) rethrow;
-      return http.Request(request.method, request.url)
-        ..headers.addAll(request.headers)
-        ..headers.remove(_recordedHeader)
-        ..bodyBytes = request.bodyBytes
-        ..followRedirects = request.followRedirects
-        ..maxRedirects = request.maxRedirects
-        ..persistentConnection = request.persistentConnection;
-    }
   }
 
   SnoopCallRecord _newRecord(http.BaseRequest request) {

@@ -124,18 +124,17 @@ void main() {
       expect(registry.records, hasLength(1));
     });
 
-    test('marks requests for snoop_http only when it is installed', () async {
-      final server = Server();
-      final chopper = clientWith(server);
+    test('the inner http call runs marked as recorded, with no extra header', () async {
+      final seen = <bool>[];
+      final server = Server()..onSend = () => seen.add(SnoopAdapters.isRecorded);
+      final chopper = chopperFor(
+        server,
+        interceptors: <Interceptor>[SnoopChopperInterceptor(enabled: true)],
+      );
       await chopper.get<dynamic, dynamic>(Uri.parse('/items'));
-      expect(server.requests.single.headers, isNot(contains('x-snoop-recorded')));
-
-      SnoopAdapters.register('http', SnoopAdapterKind.network);
-      await chopper.get<dynamic, dynamic>(Uri.parse('/items'));
-      expect(server.requests.last.headers['x-snoop-recorded'], '1');
-      for (final r in registry.records) {
-        expect(r.requestHeaders, isNot(contains('x-snoop-recorded')));
-      }
+      expect(seen, <bool>[true]);
+      expect(server.requests.single.headers.keys, isNot(contains('x-snoop-recorded')));
+      expect(SnoopAdapters.isRecorded, isFalse);
     });
   });
 

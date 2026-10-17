@@ -75,10 +75,6 @@ class SnoopChopperInterceptor implements Interceptor {
 
   static const List<String> _ignored = <String>['package:chopper/', 'package:http/'];
 
-  /// Added to the request when `snoop_http` is installed too, so its client
-  /// wrapper doesn't record the same call again.
-  static const String _recordedHeader = 'x-snoop-recorded';
-
   /// The headers actually sent, unredacted, for replays.
   static final Expando<Map<String, String>> _sentHeaders = Expando<Map<String, String>>(
     'snoop.sentHeaders',
@@ -103,9 +99,9 @@ class SnoopChopperInterceptor implements Interceptor {
       requestBytes: request.body is List<int> ? (request.body as List<int>).length : null,
       requestTruncated: body.truncated,
       replayOf: tag is _ReplayTag ? tag.replayOf : null,
-      requestHeaders: SnoopHeaders.flatten(_withoutMarker(request.headers), _redacted),
+      requestHeaders: SnoopHeaders.flatten(request.headers, _redacted),
     );
-    _sentHeaders[record] = _withoutMarker(request.headers);
+    _sentHeaders[record] = request.headers;
     if (tag is _ReplayTag) tag.record = record;
     final getClient = replayClient;
     if (getClient != null && !request.multipart && request.body is! Stream) {
@@ -127,7 +123,8 @@ class SnoopChopperInterceptor implements Interceptor {
           return response;
         }
       }
-      final response = await chain.proceed(_marked(request));
+      // A SnoopHttpClient under Chopper must not record this call again.
+      final response = await SnoopAdapters.runRecorded(() => chain.proceed(request));
       _complete(record, response);
       return response;
     } on Object catch (error, stackTrace) {
@@ -135,17 +132,6 @@ class SnoopChopperInterceptor implements Interceptor {
       Error.throwWithStackTrace(error, stackTrace);
     }
   }
-
-  /// Marks [request] for `snoop_http` when that adapter is installed too.
-  static Request _marked(Request request) {
-    if (!SnoopAdapters.ids.contains('http')) return request;
-    return request.copyWith(headers: <String, String>{...request.headers, _recordedHeader: '1'});
-  }
-
-  static Map<String, String> _withoutMarker(Map<String, String> headers) => <String, String>{
-    for (final MapEntry(:key, :value) in headers.entries)
-      if (key.toLowerCase() != _recordedHeader) key: value,
-  };
 
   static Object _faultException(SnoopFault fault, Request request) => fault == SnoopFault.timeout
       ? TimeoutException('Simulated by Snoop: timeout')
@@ -190,10 +176,7 @@ class SnoopChopperInterceptor implements Interceptor {
       edited.uri,
       original.baseUri,
       body: body,
-      headers: SnoopHeaders.unredact(
-        _withoutMarker(edited.headers),
-        _sentHeaders[record] ?? original.headers,
-      ),
+      headers: SnoopHeaders.unredact(edited.headers, _sentHeaders[record] ?? original.headers),
       listFormat: original.listFormat,
       dateFormat: original.dateFormat,
       includeNullQueryVars: original.includeNullQueryVars,
@@ -220,8 +203,8 @@ class SnoopChopperInterceptor implements Interceptor {
     final sent = base.request?.headers;
     final body = _responseBody(response);
     if (sent != null && sent.isNotEmpty) {
-      _sentHeaders[record] = _withoutMarker(sent);
-      record.requestHeaders = SnoopHeaders.flatten(_withoutMarker(sent), _redacted);
+      _sentHeaders[record] = sent;
+      record.requestHeaders = SnoopHeaders.flatten(sent, _redacted);
     }
     final finalUri = switch (base) {
       http.BaseResponseWithUrl(:final url) => url,

@@ -100,9 +100,8 @@ functions. A client constructed explicitly (`IOClient()`) must be wrapped by han
 - [ ] `RetryClient(SnoopHttpClient(...))` records each attempt. README recommends this order.
 - [ ] `close()` respects `closeInner`
 - [ ] `enabled: false` returns `inner.send(request)` untouched (identical response object)
-- [ ] a request carrying `x-snoop-recorded: 1` (set by `snoop_chopper`, see step 3) isn't
-      recorded, and the header is always stripped before `inner.send`, recorded or not.
-      Strip it through a copy of the headers when the request is already finalized.
+- [x] a call made inside `SnoopAdapters.runRecorded` (snoop_chopper, step 3) passes through
+      unrecorded. *(As built: replaced the `x-snoop-recorded` header plan.)*
 
 Tests use `MockClient` from `package:http/testing.dart` as the inner client. For streaming
 cases, use a custom `BaseClient` that returns a `StreamController`-backed response.

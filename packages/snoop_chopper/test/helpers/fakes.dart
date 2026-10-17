@@ -15,7 +15,11 @@ class Server {
 
   /// Answers 404 for `/missing`, 401 for `/secure` without a fresh token,
   /// else 200.
+  /// Called as each request reaches the server.
+  void Function()? onSend;
+
   MockClient get client => MockClient((request) async {
+    onSend?.call();
     requests.add(request);
     bodies.add(request.body);
     final (status, body) = switch (request.url.path) {

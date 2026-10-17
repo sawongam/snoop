@@ -62,12 +62,10 @@ README: add it **last** in `interceptors` so the headers it records are the ones
 ## Double recording
 
 If someone also wraps Chopper's `http.Client` with `SnoopHttpClient`, every call shows twice
-(`chopper` and `http` clients). README says to pick one. Detection: the Chopper interceptor
-adds a private header `x-snoop-recorded: 1`; `SnoopHttpClient` skips requests that carry it
-and strips it before sending. The header is added only when both packages are present
-(check `SnoopAdapters.ids.contains('http')` at call time) and **always stripped** by
-`SnoopHttpClient`. Add the check to step 2 as well; whoever implements second wires both
-sides.
+(`chopper` and `http` clients). Detection *(as built)*: the Chopper interceptor runs
+`chain.proceed` inside `SnoopAdapters.runRecorded`, and `SnoopHttpClient` passes calls through
+when `SnoopAdapters.isRecorded`. A zone value, not a header: a header leaked to servers when
+Chopper's client wasn't wrapped, and on web a custom header forces a CORS preflight.
 
 ## Edge-case checklist
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:snoop/src/coalescing_notifier.dart';
 import 'package:snoop/src/state/call_site.dart';
@@ -43,6 +45,20 @@ abstract final class SnoopAdapters {
   /// Every registered adapter id with its kind.
   static Map<String, SnoopAdapterKind> get all =>
       Map<String, SnoopAdapterKind>.unmodifiable(_notifier.adapters);
+
+  static const Object _recordedKey = #snoop.recorded;
+
+  /// Runs [body] with every call made inside it marked as already recorded,
+  /// so an adapter further down the stack doesn't record it again: Chopper
+  /// sends through an `http` client that may itself be a `SnoopHttpClient`.
+  ///
+  /// The mark is a zone value, so nothing is added to the request itself.
+  static R runRecorded<R>(R Function() body) =>
+      runZoned(body, zoneValues: <Object?, Object?>{_recordedKey: true});
+
+  /// Whether the current call runs inside [runRecorded]: an adapter higher
+  /// up the stack records it already.
+  static bool get isRecorded => Zone.current[_recordedKey] == true;
 
   /// Notifies when an adapter registers.
   static Listenable get listenable => _notifier;

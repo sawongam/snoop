@@ -508,25 +508,14 @@ void main() {
       expect(SnoopAdapters.ids, isEmpty);
     });
 
-    test('x-snoop-recorded: not recorded, header stripped', () async {
+    test('calls already recorded upstream are passed through', () async {
       final inner = StreamingClient();
-      final request = http.Request('GET', _url)..headers['x-snoop-recorded'] = '1';
+      final request = http.Request('GET', _url);
 
-      await wrap(inner).send(request);
+      await SnoopAdapters.runRecorded(() => wrap(inner).send(request));
 
       expect(registry.count, 0);
-      expect(inner.sent.single.headers.keys, isNot(contains('x-snoop-recorded')));
-    });
-
-    test('x-snoop-recorded is stripped when disabled and on finalized requests', () async {
-      final inner = StreamingClient();
-      final request = http.Request('GET', _url)
-        ..headers['X-Snoop-Recorded'] = '1'
-        ..finalize();
-
-      await SnoopHttpClient(inner, enabled: false).send(request);
-
-      expect(inner.sent.single.headers, isEmpty);
+      expect(inner.sent.single, same(request));
     });
   });
 
