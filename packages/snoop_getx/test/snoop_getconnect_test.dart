@@ -82,6 +82,7 @@ void main() {
     expect(r.requestBody, isNull);
     expect(r.duration, isNotNull);
     expect(SnoopAdapters.all['getconnect'], SnoopAdapterKind.network);
+    expect(SnoopAdapters.withoutFaults, contains('getconnect'));
   });
 
   test('POST JSON: the body is recorded and still reaches the server', () async {

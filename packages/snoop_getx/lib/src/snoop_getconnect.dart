@@ -70,6 +70,7 @@ abstract final class SnoopGetConnect {
       'getconnect',
       SnoopAdapterKind.network,
       ignoredLocations: const <String>['package:get/', 'package:snoop_getx/'],
+      simulatesFaults: false,
     );
     final recorder = _Recorder(
       client,

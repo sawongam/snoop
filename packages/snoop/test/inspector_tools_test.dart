@@ -142,6 +142,32 @@ void main() {
     expect(find.textContaining('Simulating'), findsNothing);
   });
 
+  testWidgets('conditions page names adapters that only apply latency', (tester) async {
+    await tester.pumpWidget(_app());
+    Snoop.network.add(_call());
+    await tester.pump();
+    await _openTab(tester, 'Network 1');
+    await tester.tap(find.byKey(const ValueKey<String>('snoop.network_conditions')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Latency only'), findsNothing);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    SnoopAdapters.register('slow_http', SnoopAdapterKind.network, simulatesFaults: false);
+    await tester.tap(find.byKey(const ValueKey<String>('snoop.network_conditions')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Latency only for slow_http'), findsOneWidget);
+  });
+
+  test('simulatesFaults can be changed by registering again', () {
+    SnoopAdapters.register('slow_http', SnoopAdapterKind.network, simulatesFaults: false);
+    expect(SnoopAdapters.withoutFaults, <String>{'slow_http'});
+    SnoopAdapters.register('slow_http', SnoopAdapterKind.network);
+    expect(SnoopAdapters.withoutFaults, isEmpty);
+    SnoopAdapters.reset();
+    expect(SnoopAdapters.withoutFaults, isEmpty);
+  });
+
   testWidgets('export hands HAR and session files to onExport', (tester) async {
     final exports = <SnoopExport>[];
     await tester.pumpWidget(_app(onExport: exports.add));

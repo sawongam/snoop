@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:snoop/src/adapters.dart';
 import 'package:snoop/src/network/network_conditions.dart';
 import 'package:snoop/src/network/network_registry.dart';
 import 'package:snoop/src/network/network_view.dart';
@@ -390,6 +391,14 @@ class _NetworkConditionsPageState extends State<NetworkConditionsPage> {
             _nearest(_rates, (r) => r, _conditions.failureRate),
             (r) => _conditions.failureRate = r,
           ),
+          if (SnoopAdapters.withoutFaults.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(
+              'Latency only for ${SnoopAdapters.withoutFaults.join(', ')}: '
+              'its calls are never failed on purpose.',
+              style: const TextStyle(color: InspectorColors.warning, fontSize: 10),
+            ),
+          ],
           const SizedBox(height: 14),
           inspectorLabel('FAIL WITH'),
           _picker<SnoopFault>(

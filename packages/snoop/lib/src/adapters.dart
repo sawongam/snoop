@@ -25,16 +25,27 @@ abstract final class SnoopAdapters {
   ///
   /// [ignoredLocations] are location prefixes (e.g. `'package:dio/'`) never
   /// reported as call sites; see [SnoopCallSite.ignore].
+  ///
+  /// A network adapter that can delay calls but not fail them on purpose
+  /// passes `simulatesFaults: false`, and the Network conditions page says so.
   static void register(
     String id,
     SnoopAdapterKind kind, {
     Iterable<String> ignoredLocations = const <String>[],
+    bool simulatesFaults = true,
   }) {
     SnoopCallSite.ignore(ignoredLocations);
-    if (_notifier.adapters[id] == kind) return;
+    final changed = simulatesFaults
+        ? _notifier.withoutFaults.remove(id)
+        : _notifier.withoutFaults.add(id);
+    if (_notifier.adapters[id] == kind && !changed) return;
     _notifier.adapters[id] = kind;
     _notifier.changed();
   }
+
+  /// Ids of the network adapters that apply simulated latency but no
+  /// simulated failures.
+  static Set<String> get withoutFaults => Set<String>.unmodifiable(_notifier.withoutFaults);
 
   /// Whether an adapter of [kind] registered.
   static bool has(SnoopAdapterKind kind) => _notifier.adapters.containsValue(kind);
@@ -67,12 +78,14 @@ abstract final class SnoopAdapters {
   static void reset() {
     if (_notifier.adapters.isEmpty) return;
     _notifier.adapters.clear();
+    _notifier.withoutFaults.clear();
     _notifier.changed();
   }
 }
 
 class _AdapterNotifier extends CoalescingNotifier {
   final Map<String, SnoopAdapterKind> adapters = <String, SnoopAdapterKind>{};
+  final Set<String> withoutFaults = <String>{};
 
   // Adapters often register mid-build (an observer created in a provider's
   // `create`), so the notification is deferred like every registry's.
