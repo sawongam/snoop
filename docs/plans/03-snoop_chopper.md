@@ -1,6 +1,6 @@
 # Step 3: `snoop_chopper`
 
-- **Depends on:** `snoop`, `chopper: ^8.0.0`, `http` (already a Chopper dependency; declare
+- **Depends on:** `snoop`, `chopper: ^8.2.0` (8.2.0 added `Request.dateFormat`, which replays copy), `http` (already a Chopper dependency; declare
   it to use `http.Response` types: `http: ^1.2.0`)
 - **Public API:** `SnoopChopperInterceptor`
 - **Folder:** `packages/snoop_chopper/`
