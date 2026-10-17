@@ -17,13 +17,17 @@ jobs:
       fail-fast: false
       matrix:
         # The newest stable, and the oldest Flutter the packages allow.
-        flutter: [stable, 3.38.x]
+        include:
+          - flutter: stable
+            version: ''
+          - flutter: 3.38.x
+            version: 3.38.x
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: ${{ matrix.flutter == 'stable' && '' || matrix.flutter }}
+          flutter-version: ${{ matrix.version }}
           cache: true
       - run: flutter pub get
       # The formatter's output changes between Dart versions; check it on one.
