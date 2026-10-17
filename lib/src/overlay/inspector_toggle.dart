@@ -136,10 +136,13 @@ final class SnoopSegmentedToggle<T> extends SnoopToggle {
 /// The horizontal bar of [SnoopToggle]s in the inspector panel.
 class InspectorToggleBar extends StatefulWidget {
   /// Creates the bar.
-  const InspectorToggleBar({required this.toggles, super.key});
+  const InspectorToggleBar({required this.toggles, this.trailing = const <Widget>[], super.key});
 
   /// The toggles to show.
   final List<SnoopToggle> toggles;
+
+  /// Snoop's own actions, shown after [toggles].
+  final List<Widget> trailing;
 
   @override
   State<InspectorToggleBar> createState() => _InspectorToggleBarState();
@@ -171,9 +174,13 @@ class _InspectorToggleBarState extends State<InspectorToggleBar> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 10),
-        itemCount: widget.toggles.length,
+        itemCount: widget.toggles.length + widget.trailing.length,
         separatorBuilder: (_, _) => const SizedBox(width: 14),
-        itemBuilder: (context, i) => Center(child: _item(context, widget.toggles[i])),
+        itemBuilder: (context, i) => Center(
+          child: i < widget.toggles.length
+              ? _item(context, widget.toggles[i])
+              : widget.trailing[i - widget.toggles.length],
+        ),
       ),
     ),
   );

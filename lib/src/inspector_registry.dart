@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:snoop/src/bloc/bloc_inspector_registry.dart';
 import 'package:snoop/src/dio/dio_inspector_registry.dart';
+import 'package:snoop/src/dio/network_conditions.dart';
 import 'package:snoop/src/logs/log_inspector_registry.dart';
 import 'package:snoop/src/routes/route_inspector_registry.dart';
 
@@ -18,6 +19,9 @@ abstract final class Snoop {
 
   /// Recorded HTTP calls.
   static DioInspectorRegistry get dio => DioInspectorRegistry.instance;
+
+  /// Simulated latency and failures applied to Dio calls.
+  static SnoopNetworkConditions get network => SnoopNetworkConditions.instance;
 
   /// Recorded log lines.
   static LogInspectorRegistry get logs => LogInspectorRegistry.instance;
@@ -63,6 +67,7 @@ abstract final class Snoop {
   /// Mostly useful in tests.
   static void reset() {
     bubble.value = true;
+    network.reset();
     bloc.reset();
     dio.clear();
     logs.clear();

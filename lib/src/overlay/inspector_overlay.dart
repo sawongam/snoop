@@ -6,6 +6,7 @@ import 'package:snoop/src/bloc/bloc_inspector_registry.dart';
 import 'package:snoop/src/bloc/bloc_inspector_view.dart';
 import 'package:snoop/src/dio/dio_inspector_registry.dart';
 import 'package:snoop/src/dio/dio_inspector_view.dart';
+import 'package:snoop/src/export.dart';
 import 'package:snoop/src/inspector_registry.dart';
 import 'package:snoop/src/logs/log_inspector_registry.dart';
 import 'package:snoop/src/logs/log_inspector_view.dart';
@@ -89,6 +90,7 @@ class SnoopOverlay extends StatefulWidget {
     this.accentColor,
     this.onBubbleMoved,
     this.onBubbleVisibilityChanged,
+    this.onExport,
     super.key,
   }) : assert(
          initialBubbleAlignment >= 0 && initialBubbleAlignment <= 1,
@@ -158,6 +160,26 @@ class SnoopOverlay extends StatefulWidget {
   /// To restore the choice on the next launch, save it here and seed
   /// [Snoop.bubble] before `runApp`.
   final ValueChanged<bool>? onBubbleVisibilityChanged;
+
+  /// Receives files from the Export action in the panel's action bar: the
+  /// recorded calls as HAR, or the whole session as JSON.
+  ///
+  /// Snoop has no share or file dependency, so by default an export is
+  /// copied to the clipboard and echoed to the console. Hand it to the share
+  /// sheet instead, e.g. with `share_plus`:
+  ///
+  /// ```dart
+  /// SnoopOverlay(
+  ///   onExport: (export) => SharePlus.instance.share(
+  ///     ShareParams(
+  ///       files: [XFile.fromData(utf8.encode(export.contents), mimeType: export.mimeType)],
+  ///       fileNameOverrides: [export.fileName],
+  ///     ),
+  ///   ),
+  ///   child: child!,
+  /// )
+  /// ```
+  final SnoopExportHandler? onExport;
 
   /// Opens the panel of the nearest [SnoopOverlay], if any, optionally
   /// on [tab].
@@ -267,6 +289,7 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
                 title: widget.title,
                 toggles: widget.toggles,
                 onClose: _close,
+                onExport: _export,
               ),
             ),
           ],
@@ -286,6 +309,13 @@ class _SnoopOverlayState extends State<SnoopOverlay> {
   }
 
   void _close() => _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+
+  // Read `widget` at call time, like the bubble callbacks below.
+  Future<void> _export(SnoopExport export) async {
+    final handler = widget.onExport;
+    if (handler == null) return snoopCopy(export.contents);
+    await handler(export);
+  }
 
   // Read `widget` at call time: the bubble's overlay entry is built once and
   // would otherwise keep the first callbacks.
@@ -692,6 +722,7 @@ class _InspectorPanel extends StatelessWidget {
     required this.title,
     required this.toggles,
     required this.onClose,
+    required this.onExport,
   });
 
   final _Session session;
@@ -699,6 +730,7 @@ class _InspectorPanel extends StatelessWidget {
   final String title;
   final List<SnoopToggle> toggles;
   final VoidCallback onClose;
+  final SnoopExportHandler onExport;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -720,10 +752,11 @@ class _InspectorPanel extends StatelessWidget {
                 onSearch: () => session.toggleSearch(tab),
                 onClose: onClose,
               ),
-              if (toggles.isNotEmpty) ...<Widget>[
-                const Divider(height: 1, color: InspectorColors.divider),
-                InspectorToggleBar(toggles: toggles),
-              ],
+              const Divider(height: 1, color: InspectorColors.divider),
+              InspectorToggleBar(
+                toggles: toggles,
+                trailing: <Widget>[_ExportButton(onExport: onExport)],
+              ),
               if (tabs.length > 1)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
@@ -820,6 +853,66 @@ class _Header extends StatelessWidget {
           ),
         ),
         inspectorGlyph(icon: const Icon(Icons.close), tooltip: 'Close', onTap: onClose),
+      ],
+    ),
+  );
+}
+
+enum _ExportKind { har, session }
+
+/// An "Export" entry in the action bar that offers the calls as HAR or
+/// everything as JSON, through [SnoopOverlay.onExport].
+class _ExportButton extends StatelessWidget {
+  const _ExportButton({required this.onExport});
+
+  final SnoopExportHandler onExport;
+
+  @override
+  Widget build(BuildContext context) => LiveBuilder(
+    listenable: Snoop.listenable,
+    builder: (context) {
+      final enabled = Snoop.hasRecords || Snoop.bloc.count > 0;
+      return PopupMenuButton<_ExportKind>(
+        key: const ValueKey<String>('snoop.export'),
+        tooltip: 'Export',
+        enabled: enabled,
+        color: InspectorColors.card,
+        // The menu button handles the tap; the label is just its face.
+        child: Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: inspectorTextAction('Export', const Icon(Icons.ios_share), null),
+        ),
+        onSelected: (kind) => onExport(switch (kind) {
+          _ExportKind.har => harExport(),
+          _ExportKind.session => sessionExport(),
+        }),
+        itemBuilder: (context) => <PopupMenuEntry<_ExportKind>>[
+          _item(
+            _ExportKind.har,
+            'Network calls (HAR)',
+            'Opens in Chrome DevTools, Charles, Proxyman',
+            enabled: !Snoop.dio.isEmpty,
+          ),
+          _item(_ExportKind.session, 'Full session (JSON)', 'Calls, blocs, logs and routes'),
+        ],
+      );
+    },
+  );
+
+  static PopupMenuItem<_ExportKind> _item(
+    _ExportKind kind,
+    String title,
+    String subtitle, {
+    bool enabled = true,
+  }) => PopupMenuItem<_ExportKind>(
+    value: kind,
+    enabled: enabled,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(title, style: TextStyle(color: enabled ? Colors.white : Colors.white38, fontSize: 13)),
+        Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
       ],
     ),
   );

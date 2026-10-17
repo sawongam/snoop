@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:snoop/src/bloc/bloc_inspector_registry.dart';
+import 'package:snoop/src/bloc/state_diff.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
 import 'package:snoop/src/widgets/snoop_icon.dart';
@@ -207,10 +208,139 @@ class _HistoryTile extends StatelessWidget {
         ],
         if (record.emittedFrom != null)
           inspectorSourceLine(const Icon(Icons.north_east), record.emittedFrom!),
+        const SizedBox(height: 4),
+        _DiffLines(changes: _diffOf(record)),
         const SizedBox(height: 2),
         StateTreeView(value: record.nextState, rootLabel: 'next', initiallyExpanded: false),
         StateTreeView(value: record.currentState, rootLabel: 'prev', initiallyExpanded: false),
       ],
     ),
   );
+}
+
+/// Diffs are computed once per record: the detail page rebuilds on every
+/// change of any bloc, and records never change.
+final Expando<List<StateChange>> _diffs = Expando<List<StateChange>>('snoop.diff');
+
+List<StateChange> _diffOf(BlocChangeRecord r) =>
+    _diffs[r] ??= diffStates(r.currentState, r.nextState);
+
+/// What changed between `prev` and `next`, one line per field: `~` changed,
+/// `+` added, `-` removed. Long lists collapse behind a "more" toggle.
+class _DiffLines extends StatefulWidget {
+  const _DiffLines({required this.changes});
+
+  final List<StateChange> changes;
+
+  @override
+  State<_DiffLines> createState() => _DiffLinesState();
+}
+
+class _DiffLinesState extends State<_DiffLines> {
+  static const int _collapsed = 6;
+  bool _showAll = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final changes = widget.changes;
+    if (changes.isEmpty) {
+      return const Text(
+        'No field changed (an equal state was emitted)',
+        style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+      );
+    }
+    final shown = _showAll ? changes : changes.take(_collapsed);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color: InspectorColors.sunken,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          for (final c in shown) _line(c),
+          if (changes.length > _collapsed)
+            GestureDetector(
+              onTap: () => setState(() => _showAll = !_showAll),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  _showAll ? 'Show less' : '+${changes.length - _collapsed} more',
+                  style: TextStyle(color: InspectorColors.accentOf(context), fontSize: 10),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _line(StateChange c) {
+    final (String sign, Color color) = switch (c.kind) {
+      StateChangeKind.changed => ('~', InspectorColors.warning),
+      StateChangeKind.added => ('+', InspectorColors.success),
+      StateChangeKind.removed => ('-', InspectorColors.error),
+    };
+    final style = inspectorMono.copyWith(fontSize: 10);
+    return GestureDetector(
+      onLongPress: () => snoopCopy('$c'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 1),
+        child: Text.rich(
+          TextSpan(
+            children: <TextSpan>[
+              TextSpan(
+                text: '$sign ',
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
+              TextSpan(
+                text: c.path.isEmpty ? '(state)' : c.path,
+                style: TextStyle(color: color),
+              ),
+              const TextSpan(text: '  '),
+              ...switch (c.kind) {
+                StateChangeKind.changed => <TextSpan>[
+                  TextSpan(
+                    text: _preview(c.before),
+                    style: const TextStyle(color: Colors.white38),
+                  ),
+                  const TextSpan(
+                    text: ' → ',
+                    style: TextStyle(color: Colors.white38),
+                  ),
+                  TextSpan(text: _preview(c.after)),
+                ],
+                StateChangeKind.added => <TextSpan>[TextSpan(text: _preview(c.after))],
+                StateChangeKind.removed => <TextSpan>[
+                  TextSpan(
+                    text: _preview(c.before),
+                    style: const TextStyle(color: Colors.white38),
+                  ),
+                ],
+              },
+            ],
+          ),
+          style: style,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  /// A one-line rendering: strings quoted, collections as their size,
+  /// objects as their type unless their text says more.
+  static String _preview(Object? v) {
+    final text = switch (v) {
+      String() => '"$v"',
+      Map() => '{…${v.length}}',
+      Iterable() => '[…${v.length}]',
+      null || num() || bool() || Enum() => '$v',
+      _ when '$v'.startsWith("Instance of '") => '${v.runtimeType}',
+      _ => '$v',
+    };
+    return text.length <= 80 ? text : '${text.substring(0, 79)}…';
+  }
 }

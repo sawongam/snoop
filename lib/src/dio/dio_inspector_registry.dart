@@ -1,4 +1,33 @@
 import 'package:snoop/src/coalescing_notifier.dart';
+import 'package:snoop/src/dio/network_conditions.dart';
+
+/// Resends a recorded call as [request] describes and returns the new call's
+/// record once it completes, or `null` if it wasn't recorded.
+typedef DioReplayer = Future<DioCallRecord?> Function(DioReplayRequest request);
+
+/// What to send when replaying a call: the recorded request, optionally
+/// edited.
+///
+/// Header values still reading `SnoopDioInterceptor.redactedValue` are
+/// swapped back for the values actually sent, so a replay stays
+/// authenticated.
+class DioReplayRequest {
+  /// Creates a replay request.
+  DioReplayRequest({required this.method, required this.uri, required this.headers, this.body});
+
+  /// HTTP method.
+  String method;
+
+  /// Full URL, including the query.
+  Uri uri;
+
+  /// Headers to send.
+  Map<String, String> headers;
+
+  /// Payload to send. Left as the recorded body, the original payload
+  /// (including `FormData`) is sent again.
+  Object? body;
+}
 
 /// One recorded HTTP call: the request and its eventual response or error.
 ///
@@ -11,6 +40,7 @@ class DioCallRecord {
     required this.uri,
     required this.startedAt,
     this.requestBody,
+    this.replayOf,
     Map<String, String>? requestHeaders,
   }) : requestHeaders = requestHeaders ?? <String, String>{};
 
@@ -57,6 +87,34 @@ class DioCallRecord {
   /// Whether a response or error arrived.
   bool completed = false;
 
+  /// The id of the call this one replays, if it is a replay.
+  final int? replayOf;
+
+  /// The failure `SnoopNetworkConditions` injected instead of sending the
+  /// call, if any.
+  SnoopFault? injectedFault;
+
+  /// Sends the call again. Set by `SnoopDioInterceptor`; `null` when the
+  /// payload can't be sent twice (a stream).
+  DioReplayer? replayer;
+
+  /// Whether [replay] can resend this call.
+  bool get canReplay => replayer != null;
+
+  /// The recorded request, as a starting point for an edited [replay].
+  DioReplayRequest toReplayRequest() => DioReplayRequest(
+    method: method,
+    uri: uri,
+    headers: Map<String, String>.of(requestHeaders),
+    body: requestBody,
+  );
+
+  /// Sends the call again, or [request] when given, through the same Dio.
+  /// Completes with the new call's record, or `null` when the call can't be
+  /// replayed or the replay wasn't recorded.
+  Future<DioCallRecord?> replay([DioReplayRequest? request]) async =>
+      replayer?.call(request ?? toReplayRequest());
+
   /// Whether the call failed or returned a status of 400 or more.
   bool get isError => error != null || (statusCode ?? 0) >= 400;
 
@@ -88,6 +146,8 @@ class DioCallRecord {
     'statusCode': statusCode,
     'error': error,
     'errorType': errorType,
+    if (injectedFault != null) 'injectedFault': injectedFault!.name,
+    if (replayOf != null) 'replayOf': replayOf,
     'requestHeaders': requestHeaders,
     'requestBody': requestBody,
     'responseHeaders': responseHeaders,

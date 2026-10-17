@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:snoop/src/dio/dio_inspector_registry.dart';
+import 'package:snoop/src/dio/dio_tools.dart';
+import 'package:snoop/src/dio/network_conditions.dart';
 import 'package:snoop/src/widgets/inspector_shared.dart';
 import 'package:snoop/src/widgets/live_builder.dart';
 import 'package:snoop/src/widgets/snoop_icon.dart';
@@ -26,7 +28,11 @@ class DioInspectorView extends StatefulWidget {
 }
 
 class _DioInspectorViewState extends State<DioInspectorView> {
-  late final Listenable _changes = Listenable.merge(<Listenable>[_registry, widget.query]);
+  late final Listenable _changes = Listenable.merge(<Listenable>[
+    _registry,
+    widget.query,
+    SnoopNetworkConditions.instance,
+  ]);
   _Filter _filter = _Filter.all;
   bool _statsExpanded = false;
 
@@ -44,18 +50,35 @@ class _DioInspectorViewState extends State<DioInspectorView> {
     builder: (context) {
       final records = _registry.records;
       if (records.isEmpty) {
-        return inspectorEmpty(
-          'No calls recorded',
-          message:
-              'Every request through a Dio with SnoopDioInterceptor lands here. '
-              'Open a screen that loads data and come back.',
-          icon: Icons.swap_vert_rounded,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const NetworkConditionsBanner(),
+            Expanded(
+              child: inspectorEmpty(
+                'No calls recorded',
+                message:
+                    'Every request through a Dio with SnoopDioInterceptor lands here. '
+                    'Open a screen that loads data and come back.',
+                icon: Icons.swap_vert_rounded,
+              ),
+            ),
+            Center(
+              child: inspectorTextAction(
+                'Network conditions',
+                const Icon(Icons.speed),
+                () => openNetworkConditions(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         );
       }
       final query = widget.query.text.trim().toLowerCase();
       final visible = records.where((r) => _passes(r) && r.matches(query)).toList(growable: false);
       return CustomScrollView(
         slivers: <Widget>[
+          const SliverToBoxAdapter(child: NetworkConditionsBanner()),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             sliver: SliverToBoxAdapter(
@@ -72,12 +95,8 @@ class _DioInspectorViewState extends State<DioInspectorView> {
           else
             SliverList.builder(
               itemCount: visible.length,
-              itemBuilder: (context, i) => _CallTile(
-                record: visible[i],
-                onTap: () => Navigator.of(
-                  context,
-                ).push(MaterialPageRoute<void>(builder: (_) => _CallDetailPage(id: visible[i].id))),
-              ),
+              itemBuilder: (context, i) =>
+                  _CallTile(record: visible[i], onTap: () => openCall(context, visible[i].id)),
             ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 12)),
         ],
@@ -103,6 +122,13 @@ class _DioInspectorViewState extends State<DioInspectorView> {
               onChanged: (f) => setState(() => _filter = f),
             ),
           ),
+        ),
+        inspectorGlyph(
+          key: const ValueKey<String>('snoop.network_conditions'),
+          icon: const Icon(Icons.speed),
+          tooltip: 'Network conditions',
+          active: SnoopNetworkConditions.instance.isActive,
+          onTap: () => openNetworkConditions(context),
         ),
         inspectorGlyph(
           icon: const Icon(Icons.file_copy_outlined),
@@ -227,7 +253,11 @@ class _CallTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: inspectorMeta(<String>[record.uri.host, inspectorTime(record.startedAt)]),
+      subtitle: inspectorMeta(<String>[
+        record.uri.host,
+        inspectorTime(record.startedAt),
+        ?_tagOf(record),
+      ]),
       trailing: duration == null
           ? null
           : Text(
@@ -241,9 +271,19 @@ class _CallTile extends StatelessWidget {
   }
 }
 
-class _CallDetailPage extends StatelessWidget {
-  const _CallDetailPage({required this.id});
+/// `simulated 500` or `replay of #12`, for calls that need telling apart.
+String? _tagOf(DioCallRecord r) {
+  if (r.injectedFault != null) return 'simulated ${r.injectedFault!.label.toLowerCase()}';
+  if (r.replayOf != null) return 'replay of #${r.replayOf}';
+  return null;
+}
 
+/// One call in full: URL, error, headers, payloads, and replay actions.
+class DioCallDetailPage extends StatelessWidget {
+  /// Creates the page for call [id].
+  const DioCallDetailPage({required this.id, super.key});
+
+  /// The call's [DioCallRecord.id].
   final int id;
 
   @override
@@ -293,10 +333,13 @@ class _CallDetailPage extends StatelessWidget {
               if (r.duration != null) '${r.duration!.inMilliseconds} ms',
               if (r.responseBytes != null) '${r.responseBytes} B',
               if (r.errorType != null) r.errorType!,
+              ?_tagOf(r),
             ]),
           ),
         ],
       ),
+      const SizedBox(height: 4),
+      ReplayActions(record: r),
       const SizedBox(height: 8),
       inspectorField(
         'URL',

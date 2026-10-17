@@ -17,7 +17,9 @@ void main() {
       baseUrl: 'https://jsonplaceholder.typicode.com',
       headers: <String, Object?>{'Authorization': 'Bearer demo-secret-token'},
     ),
-  )..interceptors.add(SnoopDioInterceptor()); // ②
+  );
+  // replayClient: replays from the call detail page go through this same Dio.
+  dio.interceptors.add(SnoopDioInterceptor(replayClient: dio)); // ②
 
   runApp(DemoApp(dio: dio));
 }

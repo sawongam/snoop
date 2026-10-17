@@ -26,13 +26,15 @@ the device, without switching to DevTools.
 - **A real bottom sheet.** Tapping the bubble opens a tall modal sheet that you can drag down or
   dismiss by tapping the scrim. System back leaves a detail page first, then closes the sheet,
   and only then reaches your app.
-- **Header controls**: search the current tab, **clear all** recorded data, toggle the bubble,
-  close.
+- **Header controls**: search the current tab, **export**, **clear all** recorded data, toggle
+  the bubble, close.
 - **Bloc tab**
   - Lists every live bloc and cubit, with search. Tap one to open its detail page.
   - Shows the current state as an expandable tree, using `toJson()` field names or Equatable
     `props`.
   - Keeps a per-bloc history: the event, the next and previous state, and a timestamp.
+  - **State diff**: each history entry lists the fields that changed (`~ user.name "ann" → "bob"`,
+    `+ items[2]`, `- error`), so you don't have to compare two trees by eye.
   - **Call sites**: the file and line each bloc was created at and each event was `add`ed from.
   - Shows the last error and its stack trace.
 - **Dio tab**
@@ -42,6 +44,10 @@ the device, without switching to DevTools.
     per-endpoint table, slowest first.
   - Color-coded methods. Search by URL, method or status, and filter to All, Errors or Pending.
   - Copy a call as **cURL** or JSON, or copy every call as JSON.
+  - **Replay** a call with one tap, or **edit and resend** it with a different method, URL,
+    headers or body.
+  - **Network conditions**: add latency and make a share of calls fail on purpose (offline,
+    timeout, 500, 503, 401, 429), for every call or just URLs you pick.
   - Header **redaction** for tokens and cookies, on by default.
 - **Logs tab** (optional). Feed your logger into `Snoop.logs` and read the last 500
   lines on the device, with level, source, error and stack trace.
@@ -49,6 +55,8 @@ the device, without switching to DevTools.
   remove, with the arguments each route received.
 - **Custom quick actions.** Add a bar of switches, segmented controls and buttons for your own
   debug controls, such as feature flags, environment switches or a log-out button.
+- **Export** the calls as a **HAR** file (opens in Chrome DevTools, Charles, Proxyman, Postman) or
+  the whole session as JSON, ready to attach to a bug report.
 - Everything is **copyable**. Copied values are also echoed to the `flutter run` console, so you
   can grab them on your computer.
 - Runs on **its own `Navigator`** with its own dark theme, so it works under
@@ -212,6 +220,63 @@ Pass `redactedHeaders: {}` to see every header in full.
 Redaction happens when the call is recorded, so the raw value never reaches the inspector,
 including copy-as-cURL.
 
+### Replaying calls
+
+Every call's detail page has **Replay** and **Edit & resend**. Header values that were redacted
+are sent with their real value, so a replay stays signed in. Pass the Dio the interceptor sits
+on as `replayClient`, so replays run through your interceptors (auth, token refresh) and adapter
+again:
+
+```dart
+final dio = Dio();
+dio.interceptors.insert(0, SnoopDioInterceptor(replayClient: dio));
+```
+
+Without it, replays go through a plain `Dio` that sends exactly the recorded request, headers
+included. A replay shows up as a new call, tagged `replay of #id`. Calls with a streamed body
+can't be replayed.
+
+### Simulating a bad network
+
+Tap the speed icon in the Dio tab to add latency or fail calls on purpose. Failed calls never
+reach the server: they travel through your error interceptors as a real failure would, so you
+can check error screens, retries and token refresh. They are tagged `simulated 500` (or similar)
+in the list. An amber banner stays over the list until you turn it off, and a restart clears it.
+
+It can also be set from code, e.g. in a test build:
+
+```dart
+Snoop.network
+  ..delay = const Duration(seconds: 2)
+  ..failureRate = 0.3               // 0 to 1
+  ..fault = SnoopFault.serverError  // offline, timeout, serverError, unavailable, unauthorized, tooManyRequests
+  ..urlFilter = '/orders';          // empty: every call
+```
+
+### Exporting and sharing
+
+The **Export** action in the panel's action bar (next to your `toggles`) exports the recorded
+calls as a HAR file, or the whole session (calls, blocs with their history and diffs, logs,
+routes) as JSON. Headers stay redacted.
+
+Snoop has no share or file dependency, so by default an export is copied to the clipboard and
+echoed to the console. To open the share sheet instead, hand it to `share_plus` through
+`onExport`:
+
+```dart
+SnoopOverlay(
+  onExport: (export) => SharePlus.instance.share(
+    ShareParams(
+      files: [XFile.fromData(utf8.encode(export.contents), mimeType: export.mimeType)],
+      fileNameOverrides: [export.fileName],
+    ),
+  ),
+  child: child!,
+)
+```
+
+`buildHar(Snoop.dio.records)` and `buildSessionExport()` give you the same data from code.
+
 ### Opening the panel from code
 
 ```dart
@@ -229,6 +294,8 @@ IconButton(
 | `SnoopOverlay.tabs` | all four | Which tabs to show and in what order, e.g. `[SnoopTab.dio, SnoopTab.bloc]`. |
 | `SnoopOverlay.initialBubbleAlignment` / `bubbleOnLeft` | `0.62` / `false` | Where the bubble starts: `0.0` is the top of the screen (just below the status bar), `1.0` the bottom (just above the system bar or keyboard). Dragging it overrides this. |
 | `SnoopOverlay.onBubbleMoved` | none | Called with `(alignment, onLeft)` when the bubble is dropped. Save both and pass them back as `initialBubbleAlignment` / `bubbleOnLeft` to keep its spot across launches. |
+| `SnoopOverlay.onExport` | copy to clipboard | Receives HAR and session exports from the action bar's Export menu, e.g. to open the share sheet. |
+| `SnoopDioInterceptor.replayClient` | a plain `Dio` | The Dio replayed calls go through. |
 | `SnoopOverlay.onBubbleVisibilityChanged` | none | Called with `true`/`false` when the bubble is shown or hidden (long-press, undo, the header switch, or `Snoop.bubble`). |
 | `SnoopBlocObserver.captureCallSites` | `true` | Resolve creation and dispatch sites (one stack capture per bloc and per event). |
 | `SnoopBlocObserver.logEvents` / `logErrors` | `false` / `true` | Print to the console. |

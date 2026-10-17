@@ -62,6 +62,16 @@ class SnoopLogRecord {
         (error?.toString().toLowerCase().contains(query) ?? false);
   }
 
+  /// A JSON-encodable form of the record, for exporting.
+  Map<String, Object?> toJson() => <String, Object?>{
+    'timestamp': timestamp.toIso8601String(),
+    'level': level.name,
+    'message': message,
+    if (source != null) 'source': source,
+    if (error != null) 'error': '$error',
+    if (stackTrace != null) 'stackTrace': '$stackTrace',
+  };
+
   /// A copyable rendering of the record, with its level, source, error and
   /// stack trace.
   String get text => <String>[

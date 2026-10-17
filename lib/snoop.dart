@@ -25,10 +25,19 @@ export 'src/bloc/bloc_inspector_registry.dart'
     show BlocChangeRecord, BlocInspectorRegistry, TrackedBloc;
 export 'src/bloc/call_site.dart' show defaultIgnoredLocations;
 export 'src/bloc/inspector_bloc_observer.dart' show SnoopBlocObserver;
+export 'src/bloc/state_diff.dart' show StateChange, StateChangeKind, diffStates;
 export 'src/dio/dio_inspector_interceptor.dart' show SnoopDioInterceptor;
 export 'src/dio/dio_inspector_registry.dart'
-    show DioCallRecord, DioCallStats, DioEndpointStats, DioInspectorRegistry;
+    show
+        DioCallRecord,
+        DioCallStats,
+        DioEndpointStats,
+        DioInspectorRegistry,
+        DioReplayRequest,
+        DioReplayer;
 export 'src/dio/dio_inspector_view.dart' show buildCurl;
+export 'src/dio/network_conditions.dart' show SnoopFault, SnoopNetworkConditions;
+export 'src/export.dart' show SnoopExport, SnoopExportHandler, buildHar, buildSessionExport;
 export 'src/inspector_registry.dart' show Snoop;
 export 'src/logs/log_inspector_registry.dart'
     show SnoopLogLevel, SnoopLogRecord, LogInspectorRegistry;

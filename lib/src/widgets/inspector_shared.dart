@@ -167,8 +167,8 @@ Widget inspectorLabel(String text, {VoidCallback? onCopy}) => Padding(
   ),
 );
 
-/// A compact text + icon action, e.g. "Clear".
-Widget inspectorTextAction(String label, Widget icon, VoidCallback onTap) => InkWell(
+/// A compact text + icon action, e.g. "Clear". A `null` [onTap] disables it.
+Widget inspectorTextAction(String label, Widget icon, VoidCallback? onTap) => InkWell(
   onTap: onTap,
   borderRadius: BorderRadius.circular(4),
   child: Padding(

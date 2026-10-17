@@ -56,6 +56,17 @@ class SnoopRouteRecord {
   /// `RouteSettings.arguments` (GoRouter's `extra`), when one was passed.
   final Object? arguments;
 
+  /// A summary of the record, for exporting. [arguments] are included as
+  /// they are, so they may need converting before `jsonEncode`.
+  Map<String, Object?> toJson() => <String, Object?>{
+    'timestamp': timestamp.toIso8601String(),
+    'action': action.name,
+    'name': name,
+    if (previousName != null) 'previousName': previousName,
+    'depth': depth,
+    if (arguments != null) 'arguments': arguments,
+  };
+
   /// Whether the record matches the lower-case [query] across both route
   /// names.
   bool matches(String query) {

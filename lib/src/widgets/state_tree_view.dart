@@ -82,6 +82,26 @@ List<MapEntry<String, Object?>>? childrenOf(Object? v) {
   return null;
 }
 
+/// A JSON-encodable form of [v] for copying and exporting: primitives, maps
+/// and lists as they are, enums as text, other objects through the same
+/// children [StateTreeView] shows, falling back to their text. Anything
+/// nested deeper than [maxDepth] (a cycle, say) is cut off as text.
+Object? jsonFriendly(Object? v, {int maxDepth = 32}) {
+  Object? convert(Object? v, int depth) {
+    if (v == null || v is num || v is bool || v is String) return v;
+    if (v is Enum || depth >= maxDepth) return '$v';
+    if (v is Map) {
+      return <String, Object?>{for (final e in v.entries) '${e.key}': convert(e.value, depth + 1)};
+    }
+    if (v is Iterable) return <Object?>[for (final item in v) convert(item, depth + 1)];
+    final children = childrenOf(v);
+    if (children == null) return '$v';
+    return <String, Object?>{for (final c in children) c.key: convert(c.value, depth + 1)};
+  }
+
+  return convert(v, 0);
+}
+
 class _TreeNode extends StatefulWidget {
   const _TreeNode({
     required this.value,
@@ -125,7 +145,7 @@ class _TreeNodeState extends State<_TreeNode> {
       children: <Widget>[
         InkWell(
           onTap: expandable ? () => setState(() => _expanded = !_expanded) : null,
-          onLongPress: () => snoopCopy(_copyable(widget.value)),
+          onLongPress: () => snoopCopy(jsonFriendly(widget.value)),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
             child: Row(
@@ -165,16 +185,6 @@ class _TreeNodeState extends State<_TreeNode> {
           ),
       ],
     );
-  }
-
-  /// A JSON-encodable form of [v] for copying: maps and lists as-is, objects
-  /// via their resolved children.
-  static Object? _copyable(Object? v) {
-    if (v == null || v is num || v is bool || v is String || v is Map || v is List) return v;
-    if (v is Enum) return '$v';
-    final children = childrenOf(v);
-    if (children == null) return '$v';
-    return <String, Object?>{for (final c in children) c.key: _copyable(c.value)};
   }
 
   Widget _header(List<MapEntry<String, Object?>>? children) => Text.rich(
