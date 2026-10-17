@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:snoop/snoop.dart';
@@ -14,7 +16,12 @@ import 'package:snoop/snoop.dart';
 /// `super`, so you can install it unconditionally.
 ///
 /// To keep an observer you already have, extend this class instead of
-/// [BlocObserver] and call `super` in every override.
+/// [BlocObserver] and call `super` in every override, or (bloc 9.2 and up)
+/// wrap both in a `MultiBlocObserver`.
+///
+/// Events whose handler finishes without emitting are recorded too, as a
+/// history entry marked `(no state change)`. That needs `BlocObserver.onDone`,
+/// which exists from bloc 9.1; with bloc 8 those events are not recorded.
 class SnoopBlocObserver extends BlocObserver {
   /// Creates the observer.
   ///
@@ -39,6 +46,7 @@ class SnoopBlocObserver extends BlocObserver {
   static const List<String> _ignored = <String>[
     'package:bloc/',
     'package:bloc_concurrency/',
+    'package:bloc_test/',
     'package:flutter_bloc/',
     'package:hydrated_bloc/',
     'package:nested/',
@@ -59,6 +67,11 @@ class SnoopBlocObserver extends BlocObserver {
   final bool logErrors;
 
   final List<String> _extraIgnored;
+
+  /// Events of each bloc that were added and not yet done, oldest first per
+  /// event, compared by identity.
+  final Expando<Map<Object?, List<_PendingEvent>>> _pending =
+      Expando<Map<Object?, List<_PendingEvent>>>('snoop_bloc.pending');
 
   String? _callSite() => captureCallSites ? SnoopCallSite.resolve(extra: _extraIgnored) : null;
 
@@ -87,7 +100,23 @@ class SnoopBlocObserver extends BlocObserver {
     _track(bloc);
     // onEvent runs synchronously inside bloc.add(...), so the current stack
     // still holds the dispatch site.
-    Snoop.state.noteEventOrigin(bloc, _callSite());
+    final map = _pending[bloc] ??= LinkedHashMap<Object?, List<_PendingEvent>>(
+      equals: identical,
+      hashCode: identityHashCode,
+    );
+    (map[event] ??= <_PendingEvent>[]).add(_PendingEvent(_callSite()));
+    // bloc 8 never calls onDone, and a handler may never finish (an
+    // emit.forEach over an endless stream), so keep only the newest events.
+    while (map.length > _maxPending) {
+      map.remove(map.keys.first);
+    }
+  }
+
+  static const int _maxPending = 100;
+
+  _PendingEvent? _pendingOf(Bloc<Object?, Object?> bloc, Object? event) {
+    final queue = _pending[bloc]?[event];
+    return queue == null || queue.isEmpty ? null : queue.first;
   }
 
   @override
@@ -106,12 +135,35 @@ class SnoopBlocObserver extends BlocObserver {
     super.onTransition(bloc, transition);
     if (!enabled) return;
     _track(bloc);
+    final pending = _pendingOf(bloc, transition.event);
+    pending?.emitted += 1;
+    // Set per change, so every emit of a handler carries its dispatch site.
+    Snoop.state.noteEventOrigin(bloc, pending?.origin);
     Snoop.state.change(
       bloc,
       transition.currentState,
       transition.nextState,
       event: transition.event,
     );
+  }
+
+  /// Called when an event handler has finished (bloc 9.1 and up; never called
+  /// by bloc 8). Records the event as a no-op when it never emitted.
+  ///
+  /// Doesn't call `super`: `BlocObserver.onDone` doesn't exist in bloc 8, so
+  /// calling it would not compile there, and in bloc 9 it does nothing.
+  // ignore: annotate_overrides, must_call_super
+  void onDone(Bloc<Object?, Object?> bloc, Object? event, [Object? error, StackTrace? stackTrace]) {
+    if (!enabled) return;
+    final map = _pending[bloc];
+    final queue = map?[event];
+    if (map == null || queue == null || queue.isEmpty) return;
+    final pending = queue.removeAt(0);
+    if (queue.isEmpty) map.remove(event);
+    if (error != null || pending.emitted > 0) return;
+    _track(bloc);
+    Snoop.state.noteEventOrigin(bloc, pending.origin);
+    Snoop.state.change(bloc, bloc.state, bloc.state, event: _NoStateChange(event));
   }
 
   @override
@@ -127,6 +179,26 @@ class SnoopBlocObserver extends BlocObserver {
   @override
   void onClose(BlocBase<Object?> bloc) {
     super.onClose(bloc);
-    if (enabled) Snoop.state.markDisposed(bloc);
+    if (!enabled) return;
+    _pending[bloc] = null;
+    Snoop.state.markDisposed(bloc);
   }
+}
+
+/// An event in flight: where it was added from and how often it emitted.
+class _PendingEvent {
+  _PendingEvent(this.origin);
+
+  final String? origin;
+  int emitted = 0;
+}
+
+/// The event of a history entry for a handler that emitted nothing.
+class _NoStateChange {
+  const _NoStateChange(this.event);
+
+  final Object? event;
+
+  @override
+  String toString() => '${SnoopSafe.string(event, max: 300)} (no state change)';
 }

@@ -19,7 +19,7 @@ environment:
   flutter: '>=3.38.0'
 
 dependencies:
-  bloc: ^9.0.0
+  bloc: '>=8.1.0 <10.0.0'
   flutter:
     sdk: flutter
   snoop: ^0.1.0
