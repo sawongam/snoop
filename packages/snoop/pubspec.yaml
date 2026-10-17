@@ -15,6 +15,10 @@ topics:
   - network
   - state-management
 
+screenshots:
+  - description: Opening the inspector, browsing the Network tab and viewing a call.
+    path: doc/snoop.gif
+
 resolution: workspace
 
 environment:

@@ -1,6 +1,8 @@
 # snoop_dio
 
-![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
 
 [Dio](https://pub.dev/packages/dio) adapter for [snoop](https://pub.dev/packages/snoop). It
 records every request, response and error into the Network tab, with replay and simulated

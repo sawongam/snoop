@@ -1,6 +1,8 @@
 # snoop_signals
 
-![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif" width="320" alt="Snoop demo" />
+</p>
 
 [Signals](https://pub.dev/packages/signals) adapter for
 [snoop](https://pub.dev/packages/snoop): every signal in the State tab, with its current value,

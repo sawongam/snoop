@@ -3,7 +3,9 @@
 [![pub package](https://img.shields.io/pub/v/snoop.svg)](https://pub.dev/packages/snoop)
 ![Publisher](https://img.shields.io/badge/Publisher-sawongam-blue.svg)
 
-![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+<p align="center">
+  <img src="doc/snoop.gif" width="320" alt="Snoop demo" />
+</p>
 
 **An in-app debug inspector for Flutter.**
 
