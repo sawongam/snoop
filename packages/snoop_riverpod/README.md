@@ -12,8 +12,8 @@ history, diffs and errors.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_riverpod: ^0.1.0
+  snoop: ^1.0.0
+  snoop_riverpod: ^1.0.0
 ```
 
 ## Setup
@@ -45,5 +45,5 @@ Options: `enabled` (default `kDebugMode`), `captureCallSites` (default `true`),
 
 ## Compatibility
 
-`snoop ^0.1.0`, `riverpod ^3.3.2` (`riverpod`, `flutter_riverpod` or `hooks_riverpod`), Dart
+`snoop ^1.0.0`, `riverpod ^3.3.2` (`riverpod`, `flutter_riverpod` or `hooks_riverpod`), Dart
 `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

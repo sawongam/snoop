@@ -1,3 +1,3 @@
-## 0.1.0
+## 1.0.0
 
-- Initial release: `SnoopChopperInterceptor` records Chopper calls into snoop's Network tab.
+Initial release: `SnoopChopperInterceptor` records Chopper calls in the Network tab.

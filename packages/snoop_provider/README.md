@@ -12,8 +12,8 @@ other `Listenable`, with or without provider.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_provider: ^0.1.0
+  snoop: ^1.0.0
+  snoop_provider: ^1.0.0
 ```
 
 ## Setup
@@ -61,4 +61,4 @@ What is shown as the state:
 
 ## Compatibility
 
-`snoop ^0.1.0`, `provider ^6.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `provider ^6.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

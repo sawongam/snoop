@@ -12,8 +12,8 @@ change.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_mobx: ^0.1.0
+  snoop: ^1.0.0
+  snoop_mobx: ^1.0.0
 ```
 
 ## Setup
@@ -64,4 +64,4 @@ SnoopMobx.watch('cart', () => {'items': cart.items.toList(), 'total': cart.total
 
 ## Compatibility
 
-`snoop ^0.1.0`, `mobx ^2.3.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `mobx ^2.3.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

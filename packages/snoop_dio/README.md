@@ -12,8 +12,8 @@ network trouble.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_dio: ^0.1.0
+  snoop: ^1.0.0
+  snoop_dio: ^1.0.0
 ```
 
 ## Setup
@@ -59,4 +59,4 @@ the `Dio` you give them, so the interceptor sees every call.
 
 ## Compatibility
 
-`snoop ^0.1.0`, `dio ^5.4.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `dio ^5.4.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

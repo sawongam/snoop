@@ -13,8 +13,8 @@ history, diffs and the place that set it. It depends on `signals_core` only, so 
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_signals: ^0.1.0
+  snoop: ^1.0.0
+  snoop_signals: ^1.0.0
 ```
 
 ## Setup
@@ -121,4 +121,4 @@ Use `SnoopSignalsObserver(next: ...)` directly if you build the observer chain y
 
 ## Compatibility
 
-`snoop ^0.1.0`, `signals_core >=6.0.0 <8.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `signals_core >=6.0.0 <8.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
