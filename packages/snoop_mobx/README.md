@@ -28,8 +28,8 @@ Options: `groupBy`, `includeComputeds`, `includeReactions` (noisy), `shouldTrack
   into one entry. Use `install(groupBy: SnoopMobxGroup.observable)` for one entry per
   observable.
 - `ObservableList`, `ObservableMap` and `ObservableSet` send no spy event. An action that
-  changed no plain observable is recorded as "collections changed, not captured" (default
-  grouping only). For exact snapshots, watch them:
+  changed no plain observable is listed in history as "no value change; collections not
+  captured", without counting as a change (default grouping only). For exact snapshots, watch them:
 
 ```dart
 SnoopMobx.watch('cart', () => {'items': cart.items.toList(), 'total': cart.total});

@@ -408,7 +408,9 @@ final class _Installation {
         key,
         current,
         current,
-        event: '${_clean(frame.name)} (collections changed, not captured)',
+        event: '${_clean(frame.name)} (no value change; collections not captured)',
+        // It may have been read-only, so it is history, not a change.
+        counts: false,
       );
   }
 

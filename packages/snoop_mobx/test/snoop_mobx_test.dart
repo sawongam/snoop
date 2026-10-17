@@ -109,6 +109,7 @@ void main() {
     final source = store('CounterBase')!;
     expect(source.history.first.event, contains('CounterBase.addItem'));
     expect(source.history.first.event, contains('not captured'));
+    expect(source.changeCount, 0);
     expect(s.items.length, 1);
   });
 
