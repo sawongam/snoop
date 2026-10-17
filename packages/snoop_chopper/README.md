@@ -56,4 +56,4 @@ offer replay.
 
 ## Compatibility
 
-`snoop ^0.1.0`, `chopper ^8.0.0`, `http ^1.5.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^0.1.0`, `chopper ^8.2.0`, `http ^1.5.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
