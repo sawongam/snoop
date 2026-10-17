@@ -228,4 +228,17 @@ void main() {
     expect(notifications, 1);
     registry.removeListener(listener);
   });
+
+  test('an uncounted change adds history without raising changeCount', () {
+    final key = FakeSource(0);
+    registry.change(key, 0, 0, event: 'noop', counts: false);
+    expect(registry[key]!.history, hasLength(1));
+    expect(registry[key]!.changeCount, 0);
+  });
+
+  test('SnoopStateKey survives a throwing ==', () {
+    final key = SnoopStateKey(_Throwing());
+    final source = _track(key);
+    expect(registry[key], same(source));
+  });
 }

@@ -26,10 +26,12 @@ final class SnoopStateKey {
   final Object? b;
 
   @override
-  bool operator ==(Object other) => other is SnoopStateKey && other.a == a && other.b == b;
+  bool operator ==(Object other) =>
+      other is SnoopStateKey &&
+      (SnoopSafe.run(() => other.a == a && other.b == b) ?? identical(other, this));
 
   @override
-  int get hashCode => Object.hash(a, b);
+  int get hashCode => SnoopSafe.run(() => Object.hash(a, b)) ?? identityHashCode(a);
 
   @override
   String toString() => 'SnoopStateKey($a, $b)';
@@ -339,6 +341,9 @@ class SnoopStateRegistry extends CoalescingNotifier {
   /// Records a change of [key] from [previous] to [next], tracking [key]
   /// first if needed.
   ///
+  /// With [counts] false the entry is added to the history without raising
+  /// `changeCount`: for markers such as a bloc event that emitted nothing.
+  ///
   /// Never throws, whatever the states' `==` or `toString` do.
   void change(
     Object key,
@@ -346,6 +351,7 @@ class SnoopStateRegistry extends CoalescingNotifier {
     Object? next, {
     Object? event,
     bool hasPrevious = true,
+    bool counts = true,
   }) {
     final source = _ensure(key);
     final captured = source.hasState ? _capture(source, next) : null;
@@ -354,8 +360,8 @@ class SnoopStateRegistry extends CoalescingNotifier {
         : source.snapshot
         ? source.currentState
         : previous;
+    if (counts) source.changeCount += 1;
     source
-      ..changeCount += 1
       ..history.insert(
         0,
         SnoopStateChange(

@@ -166,7 +166,7 @@ void main() {
       ..add(Idle());
     await Future<void>.delayed(Duration.zero);
     final tracked = registry[bloc]!;
-    expect(tracked.changeCount, 2);
+    expect(tracked.changeCount, 1); // The no-op entry is history, not a change.
     final idle = tracked.history.first;
     expect('${idle.event}', 'Idle (no state change)');
     expect(idle.previous, 1);

@@ -163,7 +163,7 @@ class SnoopBlocObserver extends BlocObserver {
     if (error != null || pending.emitted > 0) return;
     _track(bloc);
     Snoop.state.noteEventOrigin(bloc, pending.origin);
-    Snoop.state.change(bloc, bloc.state, bloc.state, event: _NoStateChange(event));
+    Snoop.state.change(bloc, bloc.state, bloc.state, event: _NoStateChange(event), counts: false);
   }
 
   @override
