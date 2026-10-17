@@ -7,6 +7,7 @@ environment:
 workspace:
   - packages/snoop
   - packages/snoop_dio
+  - packages/snoop_http
   - packages/snoop_bloc
   - packages/snoop_chopper
   - packages/snoop_riverpod
