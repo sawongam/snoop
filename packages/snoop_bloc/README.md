@@ -1,5 +1,7 @@
 # snoop_bloc
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [Bloc](https://pub.dev/packages/bloc) adapter for [snoop](https://pub.dev/packages/snoop):
 every bloc and cubit in the State tab, with its current state, history, diffs, events and
 errors. It depends on `bloc` only, so it works with `flutter_bloc`, `hydrated_bloc` and

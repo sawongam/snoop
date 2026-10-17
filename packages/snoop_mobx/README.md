@@ -1,5 +1,7 @@
 # snoop_mobx
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [MobX](https://pub.dev/packages/mobx) adapter for [snoop](https://pub.dev/packages/snoop):
 every store's observables in the State tab, with history, diffs and the action behind each
 change.

@@ -1,5 +1,7 @@
 # snoop_getx
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [GetX](https://pub.dev/packages/get) adapter for [snoop](https://pub.dev/packages/snoop):
 controller lifecycles, Rx values and `GetConnect` calls in the overlay.
 

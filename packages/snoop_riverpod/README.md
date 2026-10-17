@@ -1,5 +1,7 @@
 # snoop_riverpod
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [Riverpod](https://pub.dev/packages/riverpod) adapter for
 [snoop](https://pub.dev/packages/snoop): every provider in the State tab, with its value,
 history, diffs and errors.

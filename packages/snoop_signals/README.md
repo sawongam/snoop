@@ -1,5 +1,7 @@
 # snoop_signals
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [Signals](https://pub.dev/packages/signals) adapter for
 [snoop](https://pub.dev/packages/snoop): every signal in the State tab, with its current value,
 history, diffs and the place that set it. It depends on `signals_core` only, so it works with

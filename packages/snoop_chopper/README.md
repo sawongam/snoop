@@ -1,5 +1,7 @@
 # snoop_chopper
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 [Chopper](https://pub.dev/packages/chopper) adapter for [snoop](https://pub.dev/packages/snoop).
 It records every call of a `ChopperClient` into the Network tab, with replay and simulated
 network trouble.

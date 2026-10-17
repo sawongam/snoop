@@ -3,6 +3,8 @@
 [![pub package](https://img.shields.io/pub/v/snoop.svg)](https://pub.dev/packages/snoop)
 ![Publisher](https://img.shields.io/badge/Publisher-sawongam-blue.svg)
 
+![Snoop panel in a running app](https://raw.githubusercontent.com/sawongam/snoop/master/docs/media/snoop.gif)
+
 **An in-app debug inspector for Flutter.**
 
 Snoop is a debug-only overlay: network calls, live state, log lines and navigation history, on
