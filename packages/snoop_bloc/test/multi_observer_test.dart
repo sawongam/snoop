@@ -25,7 +25,7 @@ void main() {
     Bloc.observer = MultiBlocObserver(observers: <BlocObserver>[SnoopBlocObserver(enabled: true)]);
     final bloc = BurstBloc()..add(Idle());
     await Future<void>.delayed(Duration.zero);
-    expect(Snoop.state[bloc]!.changeCount, 1);
+    expect(Snoop.state[bloc]!.history.single.event.toString(), endsWith('(no state change)'));
     await bloc.close();
   });
 }
