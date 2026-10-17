@@ -808,7 +808,7 @@ class _InspectorPanel extends StatelessWidget {
   );
 }
 
-/// Title, the bubble switch, search, clear all, more, close.
+/// The bug, title, the bubble switch, search, clear all, more, close.
 class _Header extends StatelessWidget {
   const _Header({
     required this.title,
@@ -829,17 +829,37 @@ class _Header extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(14, 6, 4, 4),
     child: Row(
       children: <Widget>[
-        Flexible(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+        // The title takes all the room the actions leave, truncating only
+        // when there is truly none.
+        Expanded(
+          child: Row(
+            children: <Widget>[
+              // Lit while the bubble is showing, like the switch beside the title.
+              ValueListenableBuilder<bool>(
+                valueListenable: Snoop.bubble,
+                builder: (context, isOn, _) => SnoopIcon.bug(
+                  size: 17,
+                  color: isOn ? InspectorColors.accentOf(context) : Colors.white38,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const _BubbleSwitch(),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
-        const _BubbleSwitch(),
-        const Spacer(),
         inspectorGlyph(
           icon: const SnoopIcon.search(),
           tooltip: 'Search',
@@ -932,24 +952,18 @@ class _BubbleSwitch extends StatelessWidget {
     valueListenable: Snoop.bubble,
     builder: (context, isOn, _) => Tooltip(
       message: isOn ? 'Hide floating bubble' : 'Show floating bubble',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          SnoopIcon.bug(size: 17, color: isOn ? InspectorColors.accentOf(context) : Colors.white38),
-          SizedBox(
-            height: 28,
-            child: FittedBox(
-              child: Switch(
-                key: const ValueKey<String>('snoop.bubble_switch'),
-                value: isOn,
-                activeThumbColor: Colors.white,
-                activeTrackColor: InspectorColors.accentOf(context),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onChanged: (value) => Snoop.bubble.value = value,
-              ),
-            ),
+      child: SizedBox(
+        height: 28,
+        child: FittedBox(
+          child: Switch(
+            key: const ValueKey<String>('snoop.bubble_switch'),
+            value: isOn,
+            activeThumbColor: Colors.white,
+            activeTrackColor: InspectorColors.accentOf(context),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: (value) => Snoop.bubble.value = value,
           ),
-        ],
+        ),
       ),
     ),
   );

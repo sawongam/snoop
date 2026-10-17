@@ -39,7 +39,8 @@ class SnoopIcon extends StatelessWidget {
   }
 }
 
-/// An SVG on a 24×24 viewBox, split into its full and half-opacity strokes.
+/// An SVG on a 24×24 viewBox, split into its outline and detail strokes. Both
+/// draw in the full color so the glyphs match the Material icons beside them.
 enum _Glyph {
   bug,
   copy,
@@ -47,7 +48,7 @@ enum _Glyph {
   trash,
   code;
 
-  Path get solid => switch (this) {
+  Path get outline => switch (this) {
     // Head and body.
     _Glyph.bug => _bugBody,
     // Front sheet.
@@ -60,7 +61,7 @@ enum _Glyph {
     _Glyph.code => _codeBrackets,
   };
 
-  Path get faded => switch (this) {
+  Path get details => switch (this) {
     // Legs, antennae and the center seam.
     _Glyph.bug => _bugLegs,
     // Back sheet.
@@ -207,8 +208,8 @@ class _GlyphPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round
       ..color = color;
-    canvas.drawPath(glyph.solid, paint);
-    canvas.drawPath(glyph.faded, paint..color = color.withValues(alpha: color.a * 0.5));
+    canvas.drawPath(glyph.outline, paint);
+    canvas.drawPath(glyph.details, paint);
   }
 
   @override
