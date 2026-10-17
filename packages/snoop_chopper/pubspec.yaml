@@ -2,7 +2,7 @@ name: snoop_chopper
 description: >-
   Chopper adapter for snoop, the in-app Flutter debug inspector. Records every
   request, response and error, with replay and simulated network trouble.
-version: 0.1.0
+version: 1.0.0
 homepage: https://github.com/sawongam/snoop
 repository: https://github.com/sawongam/snoop/tree/master/packages/snoop_chopper
 issue_tracker: https://github.com/sawongam/snoop/issues
@@ -23,7 +23,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.5.0
-  snoop: ^0.1.0
+  snoop: ^1.0.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

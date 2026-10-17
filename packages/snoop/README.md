@@ -20,7 +20,7 @@ tabs, the registries and the export. Each library gets its own adapter package, 
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
+  snoop: ^1.0.0
 ```
 
 Add the adapters for the libraries your app uses (see [Adapters](#adapters)).

@@ -13,8 +13,8 @@ errors. It depends on `bloc` only, so it works with `flutter_bloc`, `hydrated_bl
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_bloc: ^0.1.0
+  snoop: ^1.0.0
+  snoop_bloc: ^1.0.0
 ```
 
 ## Setup
@@ -95,4 +95,4 @@ When several live blocs share a type name, the list shows `Name #id`.
 
 ## Compatibility
 
-`snoop ^0.1.0`, `bloc >=8.1.0 <10.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `bloc >=8.1.0 <10.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

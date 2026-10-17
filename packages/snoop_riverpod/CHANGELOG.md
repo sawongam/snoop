@@ -1,3 +1,3 @@
-## 0.1.0
+## 1.0.0
 
-- Initial release: `SnoopProviderObserver` feeds every provider, family member and mutation into snoop's State tab.
+Initial release: `SnoopProviderObserver` feeds every Riverpod provider into the State tab.

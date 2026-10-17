@@ -11,8 +11,8 @@ controller lifecycles, Rx values and `GetConnect` calls in the overlay.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_getx: ^0.1.0
+  snoop: ^1.0.0
+  snoop_getx: ^1.0.0
 ```
 
 ## Setup
@@ -123,4 +123,4 @@ What GetConnect lets a modifier do, and so what is not possible:
 
 ## Compatibility
 
-`snoop ^0.1.0`, `get ^4.7.1`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `get ^4.7.1`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

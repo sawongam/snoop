@@ -21,16 +21,16 @@ dependencies:
   mobx: ^2.3.0
   provider: ^6.0.0
   signals_core: '>=6.0.0 <8.0.0'
-  snoop: ^0.1.0
-  snoop_bloc: ^0.1.0
-  snoop_chopper: ^0.1.0
-  snoop_dio: ^0.1.0
-  snoop_getx: ^0.1.0
-  snoop_http: ^0.1.0
-  snoop_mobx: ^0.1.0
-  snoop_provider: ^0.1.0
-  snoop_riverpod: ^0.1.0
-  snoop_signals: ^0.1.0
+  snoop: ^1.0.0
+  snoop_bloc: ^1.0.0
+  snoop_chopper: ^1.0.0
+  snoop_dio: ^1.0.0
+  snoop_getx: ^1.0.0
+  snoop_http: ^1.0.0
+  snoop_mobx: ^1.0.0
+  snoop_provider: ^1.0.0
+  snoop_riverpod: ^1.0.0
+  snoop_signals: ^1.0.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

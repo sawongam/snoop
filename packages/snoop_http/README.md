@@ -12,8 +12,8 @@ shows up in the Network tab, with replay and simulated network trouble.
 
 ```yaml
 dependencies:
-  snoop: ^0.1.0
-  snoop_http: ^0.1.0
+  snoop: ^1.0.0
+  snoop_http: ^1.0.0
 ```
 
 ## Setup
@@ -57,4 +57,4 @@ and `redactedHeaders`.
 
 ## Compatibility
 
-`snoop ^0.1.0`, `http ^1.2.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
+`snoop ^1.0.0`, `http ^1.2.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.

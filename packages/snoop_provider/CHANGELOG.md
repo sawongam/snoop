@@ -1,3 +1,3 @@
-## 0.1.0
+## 1.0.0
 
-- Initial release: `SnoopListenable.track`, `SnoopChangeNotifierProvider` and `SnoopListenableProvider` feed any `ChangeNotifier` or `Listenable` into snoop's State tab.
+Initial release: `SnoopListenable.track` feeds any `ChangeNotifier` or `Listenable` into the State tab.
