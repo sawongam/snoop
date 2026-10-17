@@ -8,6 +8,7 @@ workspace:
   - packages/snoop
   - packages/snoop_dio
   - packages/snoop_bloc
+  - packages/snoop_chopper
   - apps/playground
 
 dev_dependencies:
