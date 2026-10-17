@@ -6,7 +6,7 @@
   are sent with their real values. New `SnoopDioInterceptor.replayClient`.
 - **Network conditions**: simulated latency and failures (offline, timeout, 500, 503, 401, 429)
   from the Dio tab or `Snoop.network`, optionally limited to matching URLs.
-- **Export** from the panel's action bar: calls as HAR, or the whole session as JSON. New
+- **Export** from the panel header's ⋮ menu: calls as HAR, or the whole session as JSON. New
   `SnoopOverlay.onExport` to hand files to a share sheet; `buildHar` and `buildSessionExport`
   are exported.
 

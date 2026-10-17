@@ -151,13 +151,13 @@ void main() {
     await tester.pump();
 
     await _openTab(tester, 'Dio 1');
-    await tester.tap(find.byTooltip('Export'));
+    await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Network calls (HAR)'));
+    await tester.tap(find.text('Export network calls (HAR)'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Export'));
+    await tester.tap(find.byTooltip('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Full session (JSON)'));
+    await tester.tap(find.text('Export full session (JSON)'));
     await tester.pumpAndSettle();
 
     expect(exports.map((e) => e.fileName), <Matcher>[endsWith('.har'), endsWith('.json')]);

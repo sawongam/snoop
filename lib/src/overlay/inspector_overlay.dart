@@ -750,13 +750,11 @@ class _InspectorPanel extends StatelessWidget {
                 title: title,
                 showsSearch: showsSearch,
                 onSearch: () => session.toggleSearch(tab),
+                onExport: onExport,
                 onClose: onClose,
               ),
               const Divider(height: 1, color: InspectorColors.divider),
-              InspectorToggleBar(
-                toggles: toggles,
-                trailing: <Widget>[_ExportButton(onExport: onExport)],
-              ),
+              if (toggles.isNotEmpty) InspectorToggleBar(toggles: toggles),
               if (tabs.length > 1)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
@@ -810,18 +808,20 @@ class _InspectorPanel extends StatelessWidget {
   );
 }
 
-/// Title, the bubble switch, search, clear all, close.
+/// Title, the bubble switch, search, clear all, more, close.
 class _Header extends StatelessWidget {
   const _Header({
     required this.title,
     required this.showsSearch,
     required this.onSearch,
+    required this.onExport,
     required this.onClose,
   });
 
   final String title;
   final bool showsSearch;
   final VoidCallback onSearch;
+  final SnoopExportHandler onExport;
   final VoidCallback onClose;
 
   @override
@@ -829,7 +829,7 @@ class _Header extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(14, 6, 4, 4),
     child: Row(
       children: <Widget>[
-        Expanded(
+        Flexible(
           child: Text(
             title,
             maxLines: 1,
@@ -837,7 +837,9 @@ class _Header extends StatelessWidget {
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
+        const SizedBox(width: 8),
         const _BubbleSwitch(),
+        const Spacer(),
         inspectorGlyph(
           icon: const SnoopIcon.search(),
           tooltip: 'Search',
@@ -852,6 +854,7 @@ class _Header extends StatelessWidget {
             onTap: Snoop.hasRecords ? Snoop.clearAll : null,
           ),
         ),
+        _MoreMenu(onExport: onExport),
         inspectorGlyph(icon: const Icon(Icons.close), tooltip: 'Close', onTap: onClose),
       ],
     ),
@@ -860,10 +863,10 @@ class _Header extends StatelessWidget {
 
 enum _ExportKind { har, session }
 
-/// An "Export" entry in the action bar that offers the calls as HAR or
-/// everything as JSON, through [SnoopOverlay.onExport].
-class _ExportButton extends StatelessWidget {
-  const _ExportButton({required this.onExport});
+/// The header's overflow menu: the calls as HAR or everything as JSON,
+/// handed to [SnoopOverlay.onExport].
+class _MoreMenu extends StatelessWidget {
+  const _MoreMenu({required this.onExport});
 
   final SnoopExportHandler onExport;
 
@@ -873,15 +876,17 @@ class _ExportButton extends StatelessWidget {
     builder: (context) {
       final enabled = Snoop.hasRecords || Snoop.bloc.count > 0;
       return PopupMenuButton<_ExportKind>(
-        key: const ValueKey<String>('snoop.export'),
-        tooltip: 'Export',
+        key: const ValueKey<String>('snoop.more'),
+        tooltip: 'More',
         enabled: enabled,
         color: InspectorColors.card,
-        // The menu button handles the tap; the label is just its face.
-        child: Opacity(
-          opacity: enabled ? 1 : 0.4,
-          child: inspectorTextAction('Export', const Icon(Icons.ios_share), null),
+        iconSize: 19,
+        iconColor: Colors.white70,
+        style: IconButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          disabledForegroundColor: Colors.white24,
         ),
+        icon: const Icon(Icons.more_vert),
         onSelected: (kind) => onExport(switch (kind) {
           _ExportKind.har => harExport(),
           _ExportKind.session => sessionExport(),
@@ -889,11 +894,11 @@ class _ExportButton extends StatelessWidget {
         itemBuilder: (context) => <PopupMenuEntry<_ExportKind>>[
           _item(
             _ExportKind.har,
-            'Network calls (HAR)',
+            'Export network calls (HAR)',
             'Opens in Chrome DevTools, Charles, Proxyman',
             enabled: !Snoop.dio.isEmpty,
           ),
-          _item(_ExportKind.session, 'Full session (JSON)', 'Calls, blocs, logs and routes'),
+          _item(_ExportKind.session, 'Export full session (JSON)', 'Calls, blocs, logs and routes'),
         ],
       );
     },

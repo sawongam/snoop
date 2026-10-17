@@ -52,8 +52,8 @@ enum _Glyph {
     _Glyph.bug => _bugBody,
     // Front sheet.
     _Glyph.copy => _copyFront,
-    // Handle.
-    _Glyph.search => _searchHandle,
+    // Lens.
+    _Glyph.search => _searchLens,
     // Lid and bin.
     _Glyph.trash => _trashBin,
     // Both brackets.
@@ -65,8 +65,8 @@ enum _Glyph {
     _Glyph.bug => _bugLegs,
     // Back sheet.
     _Glyph.copy => _copyBack,
-    // Lens.
-    _Glyph.search => _searchLens,
+    // Handle.
+    _Glyph.search => _searchHandle,
     // Ribs and the lid's handle.
     _Glyph.trash => _trashDetails,
     // Slash.

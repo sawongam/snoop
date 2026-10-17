@@ -131,7 +131,7 @@ class _DioInspectorViewState extends State<DioInspectorView> {
           onTap: () => openNetworkConditions(context),
         ),
         inspectorGlyph(
-          icon: const Icon(Icons.file_copy_outlined),
+          icon: const SnoopIcon.copy(),
           tooltip: 'Copy all as JSON',
           onTap: () => snoopCopy(<Object?>[for (final r in records) r.toJson()]),
         ),
