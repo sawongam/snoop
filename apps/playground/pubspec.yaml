@@ -1,0 +1,21 @@
+name: snoop_playground
+description: Demo app for every snoop package.
+publish_to: none
+version: 1.0.0+1
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  dio: ^5.4.0
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.0.0
+  snoop: ^0.1.0
+  snoop_bloc: ^0.1.0
+  snoop_dio: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
