@@ -99,6 +99,21 @@ Differences from the plans and things worth knowing:
 - **Not available on this machine**: Linux desktop builds (no ninja/clang). Widget tests
   cover the UI instead.
 
+## Lessons from wave 1 (read before wave 2)
+
+- **Don't tick an item the library can't do.** If the library's source shows a plan item is
+  impossible (dio can't report an error a later interceptor recovered), say so in the report
+  and document the limit in the README. A test that only exercises your own code isn't proof.
+- **Check version bounds against each release.** Read the changelog and the source of the
+  oldest version you allow; riverpod needed `^3.3.2`, not `^3.0.0`. Run the tests once with
+  `flutter pub downgrade` in your package (then `flutter pub upgrade`) and report the result.
+- **Nothing goes on the wire or into user objects.** No marker headers, no extra fields on the
+  user's models. Cross-adapter marks use zone values (`SnoopAdapters.runRecorded/isRecorded`).
+- **Global slots are shared with other tools.** Chain the previous value, make `install`
+  idempotent across hot restarts, and test that the previous hook still gets every call.
+- **Check exit codes, not the tail of the log.** Write test output to a file and check `$?`;
+  never commit with a failing test.
+
 ## Rules every step follows
 
 - **Match the existing code style**: doc comment on every public member
