@@ -3,117 +3,162 @@
 [![pub package](https://img.shields.io/pub/v/snoop.svg)](https://pub.dev/packages/snoop)
 ![Publisher](https://img.shields.io/badge/Publisher-sawongam-blue.svg)
 
-**A Flutter network and state inspector that lives inside your app.**
+**An in-app debug inspector for Flutter.**
 
-Snoop is a debug-only dev-tools overlay for Flutter apps. Inspect every network request, live
-state, your log lines and your navigation history on the device, without switching to
-DevTools. This is the core package; add an adapter for each library your app uses:
-[`snoop_dio`](https://pub.dev/packages/snoop_dio) (Dio and Retrofit) and
-[`snoop_bloc`](https://pub.dev/packages/snoop_bloc) today, more on the way.
+Snoop is a debug-only overlay: network calls, live state, log lines and navigation history, on
+the device, without switching to DevTools. This is the core package. It holds the overlay, the
+tabs, the registries and the export. Each library gets its own adapter package, listed
+[below](#adapters).
 
-<!-- Replace with a real capture before publishing: doc/demo.gif -->
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sawongam/snoop/main/doc/demo.gif"
-       alt="snoop demo" width="320">
-</p>
+<!-- Replace with a real capture before publishing. -->
 
-## Features
+## Install
 
-- **Debug-only by default.** In release builds `SnoopOverlay` returns your app untouched and
-  the observer and interceptor record nothing.
-- **Floating bubble.** A small edge tab. Drag it anywhere and it snaps to the nearer edge. It shows
-  a red dot when something failed. Long-press it to hide it (with Undo), or use the switch in the
-  panel header.
-- **A real bottom sheet.** Tapping the bubble opens a tall modal sheet that you can drag down or
-  dismiss by tapping the scrim. System back leaves a detail page first, then closes the sheet,
-  and only then reaches your app.
-- **Header controls**: search the current tab, **export**, **clear all** recorded data, toggle
-  the bubble, close.
-- **State tab** (with `snoop_bloc`)
-  - Lists every live bloc and cubit, with search. Tap one to open its detail page.
-  - Shows the current state as an expandable tree, using `toJson()` field names or Equatable
-    `props`.
-  - Keeps a per-bloc history: the event, the next and previous state, and a timestamp.
-  - **State diff**: each history entry lists the fields that changed (`~ user.name "ann" → "bob"`,
-    `+ items[2]`, `- error`), so you don't have to compare two trees by eye.
-  - **Call sites**: the file and line each bloc was created at and each event was `add`ed from.
-  - Shows the last error and its stack trace.
-- **Network tab** (with `snoop_dio`)
-  - Records method, URL, query, request and response headers and bodies, status, timing and
-    errors.
-  - A **stats card**: calls, failures, in flight, p95 and response size. Tap it for a
-    per-endpoint table, slowest first.
-  - Color-coded methods. Search by URL, method or status, and filter to All, Errors or Pending.
-  - Copy a call as **cURL** or JSON, or copy every call as JSON.
-  - **Replay** a call with one tap, or **edit and resend** it with a different method, URL,
-    headers or body.
-  - **Network conditions**: add latency and make a share of calls fail on purpose (offline,
-    timeout, 500, 503, 401, 429), for every call or just URLs you pick.
-  - Header **redaction** for tokens and cookies, on by default.
-- **Logs tab** (optional). Feed your logger into `Snoop.logs` and read the last 500
-  lines on the device, with level, source, error and stack trace.
-- **Routes tab** (optional). Add `SnoopRouteObserver` to see every push, pop, replace and
-  remove, with the arguments each route received.
-- **Custom quick actions.** Add a bar of switches, segmented controls and buttons for your own
-  debug controls, such as feature flags, environment switches or a log-out button.
-- **Export** the calls as a **HAR** file (opens in Chrome DevTools, Charles, Proxyman, Postman) or
-  the whole session as JSON, ready to attach to a bug report.
-- Everything is **copyable**. Copied values are also echoed to the `flutter run` console, so you
-  can grab them on your computer.
-- Runs on **its own `Navigator`** with its own dark theme, so it works under
-  `MaterialApp.builder` (or with no `MaterialApp` at all) and needs no navigator key. The only
-  thing it takes from your app's theme is its accent: your primary color.
-- The core depends only on `flutter`. Each library gets its own small adapter package.
-
-## Getting started
-
-```sh
-flutter pub add snoop snoop_dio snoop_bloc   # pick the adapters for your libraries
+```yaml
+dependencies:
+  snoop: ^0.1.0
 ```
 
-## Usage
+Add the adapters for the libraries your app uses (see [Adapters](#adapters)).
+
+## Setup
+
+Mount the overlay once, usually in `MaterialApp.builder`:
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:snoop/snoop.dart';
-import 'package:snoop_bloc/snoop_bloc.dart';
-import 'package:snoop_dio/snoop_dio.dart';
 
 void main() {
-  Bloc.observer = SnoopBlocObserver();                      // 1. blocs
-  final dio = Dio()..interceptors.insert(0, SnoopDioInterceptor()); // 2. http
-  runApp(MaterialApp(
-    builder: (context, child) => SnoopOverlay(child: child!), // 3. overlay
-    navigatorObservers: [SnoopRouteObserver()],              // 4. routes (optional)
-    home: HomePage(dio: dio),
-  ));
+  runApp(
+    MaterialApp(
+      builder: (context, child) => SnoopOverlay(child: child!),
+      navigatorObservers: [SnoopRouteObserver()], // optional: Routes tab
+      home: const HomePage(),
+    ),
+  );
 }
 ```
 
-Tap the tab on the right edge to open the inspector.
+Tap the tab on the right edge to open the inspector. The core depends only on `flutter`.
 
-> **Insert the interceptor at index 0.** It then sees errors before any interceptor that
-> swallows them, and it still shows headers that later interceptors add (auth and so on).
+## The overlay
 
-### Keeping your own `BlocObserver`
+- **Debug-only by default.** `SnoopOverlay.enabled` defaults to `kDebugMode`. When it is false
+  the overlay returns your app untouched.
+- **Floating bubble.** A small edge tab. Drag it anywhere and it snaps to the nearer edge. It
+  shows a red dot when something failed. Long-press it to hide it (with Undo), or use the
+  switch in the panel header.
+- **A bottom sheet.** Tapping the bubble opens a tall modal sheet that you can drag down or
+  dismiss by tapping the scrim. System back leaves a detail page first, then closes the sheet,
+  and only then reaches your app.
+- **Header controls.** Search the current tab, export, clear all recorded data, toggle the
+  bubble, close.
+- **Its own `Navigator` and theme.** It works under `MaterialApp.builder`, or with no
+  `MaterialApp` at all, and needs no navigator key. It takes only your primary color from your
+  theme, as its accent.
+- Everything is copyable. Copied values are also echoed to the `flutter run` console.
 
-`Bloc.observer` holds one observer. Extend `SnoopBlocObserver` instead of `BlocObserver`
-and call `super` in every override:
+### Panel title and accent color
 
 ```dart
-class AppBlocObserver extends SnoopBlocObserver {
-  AppBlocObserver() : super(ignoredLocations: ['package:my_app/core/bloc_observer/']);
-
-  @override
-  void onError(BlocBase<Object?> bloc, Object error, StackTrace stackTrace) {
-    crashReporter.log(error, stackTrace);
-    super.onError(bloc, error, stackTrace);
-  }
-}
+SnoopOverlay(title: 'Acme Debug', accentColor: Colors.teal, child: child!)
 ```
 
-`ignoredLocations` keeps your observer's own frames out of the reported call sites.
+The title defaults to `Snoop Inspector`. The accent defaults to `colorScheme.primary`, lightened
+on the dark panel when needed so text stays readable.
 
-### Logs
+### Bubble position and visibility
+
+`initialBubbleAlignment` (`0.0` top, `1.0` bottom, default `0.62`) and `bubbleOnLeft` set where
+the bubble starts. `onBubbleMoved(alignment, onLeft)` is called when it is dropped, so you can
+save the spot. `onBubbleVisibilityChanged` is called when it is shown or hidden.
+
+`Snoop.bubble` is a `ValueNotifier<bool>`. To remember the user's choice, seed it at startup
+and save it on change:
+
+```dart
+Snoop.bubble.value = prefs.getBool('inspector_bubble') ?? true;
+Snoop.bubble.addListener(() => prefs.setBool('inspector_bubble', Snoop.bubble.value));
+```
+
+### Opening the panel from code
+
+```dart
+IconButton(
+  icon: const Icon(Icons.bug_report),
+  onPressed: () => SnoopOverlay.open(context, tab: 'network'),
+)
+```
+
+This works while the bubble is hidden.
+
+## Tabs
+
+| Tab | id | Shown when | Filled by |
+| --- | --- | --- | --- |
+| Network | `network` | a network adapter is installed, or a call was recorded | a network adapter |
+| State | `state` | a state adapter is installed, or a source was tracked | a state adapter |
+| Logs | `logs` | always | `Snoop.logs.log(...)` |
+| Routes | `routes` | always | `SnoopRouteObserver` |
+
+`SnoopOverlay.tabs` picks which tabs show and in what order. It defaults to
+`SnoopTab.defaults`.
+
+```dart
+SnoopOverlay(tabs: [SnoopTab.network, SnoopTab.state], child: child!)
+```
+
+The selected tab and each tab's search survive closing the sheet. Hidden tabs ignore updates.
+
+### Network tab
+
+- Method, URL, query, request and response headers and bodies, status, timing and errors.
+- A stats card: calls, failures, in flight, p95 and response size. Tap it for a per-endpoint
+  table, slowest first.
+- Search by URL, method, status or client, and filter to All, Errors or Pending.
+- Copy a call as cURL or JSON, or copy every call as JSON.
+- Replay a call, or edit and resend it, where the adapter supports it.
+- Header redaction (see [Redacting secrets](#redacting-secrets)).
+
+### State tab
+
+- Lists every tracked source (a bloc, a provider, a signal, a store) with search.
+- The current value as an expandable tree.
+- A per-source history with a diff of each change (`~ user.name "ann" -> "bob"`, `+ items[2]`,
+  `- error`), and the file and line that caused it, where the adapter can tell.
+- The last error and its stack trace.
+- Disposed sources stay listed, greyed out, until evicted (`retainDisposed`).
+
+The tree uses the richest shape a value exposes: `Map`, `Iterable`, a `toJson()` that returns a
+`Map` (json_serializable, freezed, OpenAPI DTOs), or Equatable-style `props`. Classes with none
+of these show as `TypeName (no toJson/props)`. Add a `toJson()` to see their fields.
+
+### Custom tabs
+
+Pass your own `SnoopTab` next to the built-in ones:
+
+```dart
+SnoopOverlay(
+  tabs: [
+    ...SnoopTab.defaults,
+    SnoopTab(
+      id: 'flags',
+      label: 'Flags',
+      searchHint: 'Flag name',
+      listenable: flags,
+      builder: (context, query) => FlagsView(query: query),
+    ),
+  ],
+  child: child!,
+)
+```
+
+`listenable` tells the panel when to refresh. Optional `count` is appended to the label,
+`errorCount` lights the bubble's error dot, and `isAvailable` hides the tab. Open it from code
+with `SnoopOverlay.open(context, tab: 'flags')`.
+
+## Logs
 
 Send your logger's output to the Logs tab. It records only in debug mode by default
 (`Snoop.logs.enabled`):
@@ -128,53 +173,24 @@ Snoop.logs.log(
 );
 ```
 
-### Routes
+## Routes
 
-`SnoopRouteObserver` records the navigator it is attached to. With GoRouter, pass it to
+`SnoopRouteObserver` records the navigator it is attached to: every push, pop, replace and
+remove, with the arguments each route received. With GoRouter, pass it to
 `GoRouter(observers: [...])`. Nested navigators, such as a `StatefulShellBranch`, need their own
 instance. Routes are named by `RouteSettings.name`, falling back to the page type.
 
-### Showing a value while you build a screen
+## Showing a value while you build a screen
 
 ```dart
 onLongPress: () => showValueSheet(context: context, title: 'Post', value: post),
 ```
 
-This opens the value as a tree, with a Raw JSON toggle and a copy button. It is also what the
-Routes tab uses to show a route's arguments.
+This opens the value as a tree, with a Raw JSON toggle and a copy button.
 
-### Keeping the bubble hidden
+## Custom quick actions
 
-`Snoop.bubble` is a `ValueNotifier<bool>`. To remember the user's choice, seed it at
-startup and save it on change:
-
-```dart
-Snoop.bubble.value = prefs.getBool('inspector_bubble') ?? true;
-Snoop.bubble.addListener(
-  () => prefs.setBool('inspector_bubble', Snoop.bubble.value),
-);
-```
-
-`SnoopOverlay.open(context)` still works while the bubble is hidden.
-
-### Panel title
-
-The panel header reads `Snoop Inspector`. Override it with `title`:
-
-```dart
-SnoopOverlay(title: 'Acme Debug', child: child!)
-```
-
-### Accent color
-
-The bubble and the panel's highlights use your app's `colorScheme.primary`. On the dark panel
-it is lightened when needed so text stays readable. To use a different color:
-
-```dart
-SnoopOverlay(accentColor: Colors.teal, child: child!)
-```
-
-### Custom quick actions
+A bar of switches, segmented controls and buttons for your own debug controls:
 
 ```dart
 SnoopOverlay(
@@ -183,8 +199,8 @@ SnoopOverlay(
       label: 'Theme',
       icon: Icons.brightness_6_outlined,
       segments: const [(ThemeMode.light, 'Light'), (ThemeMode.dark, 'Dark')],
-      value: (context) => context.read<ThemeCubit>().state,
-      onChanged: (context, mode) => context.read<ThemeCubit>().set(mode),
+      value: (context) => themeMode.value,
+      onChanged: (context, mode) => themeMode.value = mode,
     ),
     SnoopToggle.switcher(
       label: 'Mock API',
@@ -195,57 +211,43 @@ SnoopOverlay(
     SnoopToggle.action(
       label: 'Log out',
       icon: Icons.logout,
-      onTap: (context) => context.read<AuthBloc>().add(LoggedOut()),
+      onTap: (context) => auth.logOut(),
     ),
   ],
   child: child!,
 )
 ```
 
-The callbacks get a `BuildContext` below the overlay, so blocs provided above `MaterialApp` are
-reachable. Values refresh after each tap, whenever any bloc emits, and whenever the optional
-`listenable` notifies.
+The callbacks get a `BuildContext` below the overlay. Values refresh after each tap, whenever
+any state source changes, and whenever the optional `listenable` notifies.
 
-### Redacting secrets
+## Redacting secrets
 
-`authorization`, `cookie`, `set-cookie`, `proxy-authorization` and `x-api-key` are redacted by
-default. Passing `redactedHeaders`
-replaces that list, so spread the defaults in to add your own:
+Network adapters redact headers when a call is recorded, so the raw value never reaches the
+inspector, including copy-as-cURL. `SnoopHeaders.defaultRedacted` holds the default names:
+`authorization`, `cookie`, `set-cookie`, `proxy-authorization` and `x-api-key`. Adapters take a
+`redactedHeaders` set that replaces the default, so spread the defaults in to add your own:
 
 ```dart
-SnoopDioInterceptor(
-  redactedHeaders: {...SnoopHeaders.defaultRedacted, 'x-session'}, // case-insensitive
-  shouldRecord: (options) => !options.path.startsWith('/health'),
-)
+SnoopDioInterceptor(redactedHeaders: {...SnoopHeaders.defaultRedacted, 'x-session'})
 ```
 
 Pass `redactedHeaders: {}` to see every header in full.
 
-Redaction happens when the call is recorded, so the raw value never reaches the inspector,
-including copy-as-cURL.
+## Replaying calls
 
-### Replaying calls
+A call's detail page has Replay and Edit & resend where the adapter supports it. Redacted header
+values are sent with their real value, so a replay stays signed in. A replay shows up as a new
+call, tagged `replay of #id`. Calls with a streamed body can't be replayed. Whether replays go
+through your interceptors depends on the adapter; see its README.
 
-Every call's detail page has **Replay** and **Edit & resend**. Header values that were redacted
-are sent with their real value, so a replay stays signed in. Pass the Dio the interceptor sits
-on as `replayClient`, so replays run through your interceptors (auth, token refresh) and adapter
-again:
-
-```dart
-final dio = Dio();
-dio.interceptors.insert(0, SnoopDioInterceptor(replayClient: dio));
-```
-
-Without it, replays go through a plain `Dio` that sends exactly the recorded request, headers
-included. A replay shows up as a new call, tagged `replay of #id`. Calls with a streamed body
-can't be replayed.
-
-### Simulating a bad network
+## Network conditions
 
 Tap the speed icon in the Network tab to add latency or fail calls on purpose. Failed calls never
-reach the server: they travel through your error interceptors as a real failure would, so you
-can check error screens, retries and token refresh. They are tagged `simulated 500` (or similar)
-in the list. An amber banner stays over the list until you turn it off, and a restart clears it.
+reach the server. They are tagged `simulated 500` (or similar) in the list. An amber banner stays
+over the list until you turn it off, and a restart clears it. Only calls an enabled adapter
+records are affected. An adapter that can delay calls but not fail them says so on the
+conditions page.
 
 It can also be set from code, e.g. in a test build:
 
@@ -257,11 +259,11 @@ Snoop.networkConditions
   ..urlFilter = '/orders';          // empty: every call
 ```
 
-### Exporting and sharing
+## Export and sharing
 
-The **⋮** menu in the panel header exports the recorded
-calls as a HAR file, or the whole session (calls, state with its history and diffs, logs,
-routes) as JSON. Headers stay redacted.
+The menu in the panel header exports the recorded calls as a HAR file (opens in Chrome
+DevTools, Charles, Proxyman, Postman), or the whole session (calls, state with its history and
+diffs, logs, routes) as JSON. Headers stay redacted.
 
 Snoop has no share or file dependency, so by default an export is copied to the clipboard and
 echoed to the console. To open the share sheet instead, hand it to `share_plus` through
@@ -281,58 +283,60 @@ SnoopOverlay(
 
 `buildHar(Snoop.network.records)` and `buildSessionExport()` give you the same data from code.
 
-### Opening the panel from code
-
-```dart
-IconButton(
-  icon: const Icon(Icons.bug_report),
-  onPressed: () => SnoopOverlay.open(context, tab: 'network'),
-)
-```
-
-### Configuration
+## Configuration
 
 | Option | Default | Description |
 | --- | --- | --- |
 | `SnoopOverlay.enabled` | `kDebugMode` | Show the overlay. Set it to `true` for profile or internal builds. |
-| `SnoopOverlay.tabs` | `SnoopTab.defaults` | Which tabs to show and in what order, e.g. `[SnoopTab.network, SnoopTab.state]`, plus your own `SnoopTab`s. Network and State show once an adapter of that kind is installed. |
-| `SnoopOverlay.initialBubbleAlignment` / `bubbleOnLeft` | `0.62` / `false` | Where the bubble starts: `0.0` is the top of the screen (just below the status bar), `1.0` the bottom (just above the system bar or keyboard). Dragging it overrides this. |
-| `SnoopOverlay.onBubbleMoved` | none | Called with `(alignment, onLeft)` when the bubble is dropped. Save both and pass them back as `initialBubbleAlignment` / `bubbleOnLeft` to keep its spot across launches. |
-| `SnoopOverlay.onExport` | copy to clipboard | Receives HAR and session exports from the header's ⋮ menu, e.g. to open the share sheet. |
-| `SnoopDioInterceptor.replayClient` | a plain `Dio` | The Dio replayed calls go through. |
-| `SnoopOverlay.onBubbleVisibilityChanged` | none | Called with `true`/`false` when the bubble is shown or hidden (long-press, undo, the header switch, or `Snoop.bubble`). |
-| `SnoopBlocObserver.captureCallSites` | `true` | Resolve creation and dispatch sites (one stack capture per bloc and per event). |
-| `SnoopBlocObserver.logEvents` / `logErrors` | `false` / `true` | Print to the console. |
-| `Snoop.state.maxHistory` | `50` | Changes kept per state source. |
-| `Snoop.state.retainDisposed` / `maxSources` | `20` / `500` | Disposed sources kept, and sources kept in all. |
+| `SnoopOverlay.tabs` | `SnoopTab.defaults` | Which tabs to show and in what order, plus your own `SnoopTab`s. |
+| `SnoopOverlay.toggles` | none | Custom quick actions. |
+| `SnoopOverlay.initialBubbleAlignment` / `bubbleOnLeft` | `0.62` / `false` | Where the bubble starts. Dragging it overrides this. |
+| `SnoopOverlay.onBubbleMoved` | none | Called with `(alignment, onLeft)` when the bubble is dropped. |
+| `SnoopOverlay.onBubbleVisibilityChanged` | none | Called when the bubble is shown or hidden. |
+| `SnoopOverlay.onExport` | copy to clipboard | Receives HAR and session exports, e.g. to open the share sheet. |
 | `Snoop.network.maxRecords` | `100` | Calls kept. |
 | `Snoop.network.maxBodyChars` | `262144` | Longer bodies are cut. Worst-case memory is about `maxRecords × 2 × maxBodyChars`. |
+| `Snoop.state.maxHistory` | `50` | Changes kept per state source. |
+| `Snoop.state.retainDisposed` | `20` | Disposed sources kept in the list. |
+| `Snoop.state.maxSources` | `500` | Sources kept in all. |
 | `Snoop.logs.maxRecords` | `500` | Log lines kept. |
+| `Snoop.logs.enabled` | `kDebugMode` | Record log lines. |
 | `Snoop.routes.maxRecords` | `100` | Navigations kept. |
 
-### Getting better state trees
+## Adapters
 
-The state tree uses the richest shape a value exposes: `Map`, `Iterable`, a `toJson()` that
-returns a `Map` (json_serializable, freezed and OpenAPI DTOs), or Equatable-style `props`.
-Classes with none of these show as `TypeName (no toJson/props)`. Add a `toJson()` to see their
-fields.
+Each adapter is a separate package with its own setup and limits.
+
+| Package | Library | Feeds |
+| --- | --- | --- |
+| [`snoop_dio`](https://pub.dev/packages/snoop_dio) | Dio, Retrofit | Network |
+| [`snoop_http`](https://pub.dev/packages/snoop_http) | package:http | Network |
+| [`snoop_chopper`](https://pub.dev/packages/snoop_chopper) | Chopper | Network |
+| [`snoop_bloc`](https://pub.dev/packages/snoop_bloc) | Bloc, Cubit | State |
+| [`snoop_riverpod`](https://pub.dev/packages/snoop_riverpod) | Riverpod 3 | State |
+| [`snoop_provider`](https://pub.dev/packages/snoop_provider) | Provider, any `Listenable` | State |
+| [`snoop_getx`](https://pub.dev/packages/snoop_getx) | GetX, `GetConnect` | State, Network |
+| [`snoop_mobx`](https://pub.dev/packages/snoop_mobx) | MobX | State |
+| [`snoop_signals`](https://pub.dev/packages/snoop_signals) | signals | State |
+
+To write your own adapter, call `SnoopAdapters.register(id, kind)` when it is created, then
+write into `Snoop.network` or `Snoop.state`.
 
 ## How it works
 
-- The adapters (`SnoopBlocObserver`, `SnoopDioInterceptor`, …), `Snoop.logs.log` and
-  `SnoopRouteObserver` write into in-memory registries under `Snoop`. Each is a
-  bounded ring buffer.
-- The registries notify at most once per microtask. A burst of emits or requests causes one
-  rebuild, and a bloc created during a build never triggers `setState() called during build`.
+- Adapters, `Snoop.logs.log` and `SnoopRouteObserver` write into in-memory registries under
+  `Snoop`. Each is a bounded ring buffer.
+- The registries notify at most once per microtask. A burst of events causes one rebuild, and
+  a source created during a build never triggers `setState() called during build`.
 - The bubble and the sheet live on the overlay's own `Navigator`, above your app's. While the
   sheet is open, the overlay adds a `LocalHistoryEntry` to your app's top route (the same
   mechanism `Drawer` uses), so the system back button closes the inspector instead of popping
   your screen.
-- The selected tab and each tab's search survive closing the sheet. Hidden tabs ignore updates,
-  so a chatty cubit costs nothing.
+
+## Compatibility
+
+Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`. Depends on `flutter` only.
 
 ## Example
 
-A runnable demo is in [`apps/playground/`](../../apps/playground/lib/main.dart). It has a counter cubit, a posts bloc
-that uses Dio, a request that fails with a 404, redacted auth headers, log lines, a pushed route
-with arguments and `showValueSheet` on long-press.
+A runnable demo is in [`apps/playground/`](https://github.com/sawongam/snoop/tree/master/apps/playground).

@@ -3,7 +3,17 @@
 [Signals](https://pub.dev/packages/signals) adapter for
 [snoop](https://pub.dev/packages/snoop): every signal in the State tab, with its current value,
 history, diffs and the place that set it. It depends on `signals_core` only, so it works with
-`signals` and `signals_flutter` too. Supported: `signals_core >=6.0.0 <8.0.0`.
+`signals` and `signals_flutter` too.
+
+## Install
+
+```yaml
+dependencies:
+  snoop: ^0.1.0
+  snoop_signals: ^0.1.0
+```
+
+## Setup
 
 ```dart
 // ignore_for_file: deprecated_member_use
@@ -61,7 +71,7 @@ class _CounterPageState extends State<CounterPage> {
 which 6.x does not have. The adapter reads either, so name your signals the way your version
 wants.
 
-## Keeping the observer that is already there
+### Keeping the observer that is already there
 
 `SignalsObserver.instance` is one global slot, and in debug builds signals fills it with its
 own DevTools observer. `SnoopSignals.install()` keeps that one and forwards every call to it
@@ -76,7 +86,16 @@ Install before creating signals. A signal created earlier is picked up on its fi
 with no previous value. A top-level `final count = signal(0)` is lazy in Dart, so most signals
 are created after `main` runs anyway.
 
-## What is recorded
+Options: `SnoopSignals.install({includeComputed, includeEffects, shouldTrack, captureCallSites,
+enabled, ignoredLocations})`.
+
+* `shouldTrack: (signal) => ...` drops noisy signals (animation ticks). It runs once per signal.
+* `captureCallSites` costs one stack capture per signal created and per update. Turn it off
+  for signals that update every frame.
+
+Use `SnoopSignalsObserver(next: ...)` directly if you build the observer chain yourself.
+
+## What's recorded
 
 * Signal: created with its initial value, then one change per set, with the place that set it.
   `batch` records one change per signal.
@@ -86,17 +105,16 @@ are created after `main` runs anyway.
   disposed once it is garbage-collected.
 * Computed (`includeComputed: true`): computeds are lazy, so one appears with no value and
   gets its first one when something reads it.
-* Effects (`includeEffects: true`): a source without a value. **Only the first run is
-  recorded**: signals_core reports an effect to its observer when it is activated, not on
-  every re-run (and signals_core 6.0.0 never reports a run at all). Disposing the effect marks the source disposed.
+* Effects (`includeEffects: true`): a source without a value. Disposing the effect marks the
+  source disposed.
 
-## Options
+## Limitations
 
-`SnoopSignals.install({includeComputed, includeEffects, shouldTrack, captureCallSites, enabled,
-ignoredLocations})`.
+* Effects record only their first run: signals_core reports an effect to its observer when it
+  is activated, not on every re-run (and signals_core 6.0.0 never reports a run at all).
+* Computeds are lazy: one appears with no value until something reads it.
+* A signal created before `install` has no previous value on its first recorded change.
 
-* `shouldTrack: (signal) => ...` drops noisy signals (animation ticks). It runs once per signal.
-* `captureCallSites` costs one stack capture per signal created and per update. Turn it off
-  for signals that update every frame.
+## Compatibility
 
-Use `SnoopSignalsObserver(next: ...)` directly if you build the observer chain yourself.
+`snoop ^0.1.0`, `signals_core >=6.0.0 <8.0.0`, Dart `>=3.10.0 <4.0.0`, Flutter `>=3.38.0`.
