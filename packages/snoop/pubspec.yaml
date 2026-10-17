@@ -1,0 +1,33 @@
+name: snoop
+description: >-
+  In-app debug inspector for Flutter. Inspect network calls, live state,
+  logs and navigation in a floating dev-tools overlay. Add an adapter for
+  your HTTP client and state library.
+version: 0.1.0
+homepage: https://github.com/sawongam/snoop
+repository: https://github.com/sawongam/snoop/tree/master/packages/snoop
+issue_tracker: https://github.com/sawongam/snoop/issues
+documentation: https://github.com/sawongam/snoop#readme
+topics:
+  - debugging
+  - devtools
+  - inspector
+  - network
+  - state-management
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:

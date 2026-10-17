@@ -1,0 +1,30 @@
+name: snoop_dio
+description: >-
+  Dio adapter for snoop, the in-app Flutter debug inspector. Records every
+  request, response and error, with replay and simulated network trouble.
+version: 0.1.0
+homepage: https://github.com/sawongam/snoop
+repository: https://github.com/sawongam/snoop/tree/master/packages/snoop_dio
+issue_tracker: https://github.com/sawongam/snoop/issues
+topics:
+  - dio
+  - debugging
+  - devtools
+  - network
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.0'
+
+dependencies:
+  dio: ^5.4.0
+  flutter:
+    sdk: flutter
+  snoop: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
