@@ -12,6 +12,7 @@ workspace:
   - packages/snoop_chopper
   - packages/snoop_riverpod
   - packages/snoop_provider
+  - packages/snoop_mobx
   - apps/playground
 
 dev_dependencies:
