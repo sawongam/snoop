@@ -88,7 +88,7 @@ conditions and configuration.
 ```
 packages/   the published packages (snoop and the snoop_* adapters)
 apps/       playground: a demo app
-docs/plans/ design notes for the core and each adapter
+docs/       media for the READMEs
 ```
 
 This is a Dart pub workspace managed with [melos](https://melos.invertase.dev).
