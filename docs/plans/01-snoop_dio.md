@@ -36,7 +36,7 @@ final dio = Dio()..interceptors.insert(0, SnoopDioInterceptor(replayClient: dio)
 5. **Request bytes**: `requestBytes` from the encoded body when it's a `String` or `List<int>`;
    otherwise `null`.
 6. **Conditions**: already on `Snoop.networkConditions.simulate` (step 0). Keep it.
-7. **An error resolved by a later interceptor** (`handler.resolve(response)` in `onError`):
+7. **An error resolved by a later interceptor** *(as built: not detectable in dio 5.11.1. `ErrorInterceptorHandler.resolve` has no `callFollowing` flag, so response interceptors are skipped and the record stays failed. The `recoveredFrom` path exists but only triggers if `onResponse` runs; the README documents the limit.)* (`handler.resolve(response)` in `onError`):
    our `onError` already ran, so the record says failed while the app got a response. Detect it
    in `onResponse`: if the record is completed with an error, update it to the response and
    keep `error` as `recoveredFrom` in `toJson`. Test it.
