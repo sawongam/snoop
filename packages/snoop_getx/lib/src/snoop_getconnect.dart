@@ -248,7 +248,10 @@ class _Recorder {
         ..error = reason
         ..errorType = reason.contains('TimeoutException') ? 'timeout' : 'connectionError';
     } else if (response.statusCode == 401) {
-      _unauthorized['${record.method} ${record.uri}'] = (record: record, at: DateTime.now());
+      final now = DateTime.now();
+      // A 401 that is never retried would otherwise stay here for good.
+      _unauthorized.removeWhere((_, seen) => now.difference(seen.at) > _retryWindow);
+      _unauthorized['${record.method} ${record.uri}'] = (record: record, at: now);
     }
     Snoop.network.changed();
     return response;
