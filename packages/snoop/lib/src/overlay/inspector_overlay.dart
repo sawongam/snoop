@@ -170,6 +170,10 @@ class _Session extends ChangeNotifier {
   final Map<String, TextEditingController> _queries = <String, TextEditingController>{};
   final Set<String> searchOpen = <String>{};
 
+  // Tabs whose search was just opened by a tap. Only those take focus, so
+  // reopening the sheet with search still shown doesn't pop the keyboard.
+  final Set<String> _focusSearch = <String>{};
+
   TextEditingController query(String tab) => _queries.putIfAbsent(tab, TextEditingController.new);
 
   void select(String value) {
@@ -178,9 +182,18 @@ class _Session extends ChangeNotifier {
   }
 
   void toggleSearch(String tab) {
-    if (!searchOpen.remove(tab)) searchOpen.add(tab);
+    if (searchOpen.remove(tab)) {
+      _focusSearch.remove(tab);
+    } else {
+      searchOpen.add(tab);
+      _focusSearch.add(tab);
+    }
     notifyListeners();
   }
+
+  /// Whether [tab]'s search field should take focus when it mounts. Consumes
+  /// the request, so only the first build after a tap gets it.
+  bool takeSearchFocus(String tab) => _focusSearch.remove(tab);
 
   @override
   void dispose() {
@@ -788,7 +801,7 @@ class _InspectorPanel extends StatelessWidget {
               key: ValueKey<String>(tab.id),
               controller: query,
               hint: tab.searchHint,
-              autofocus: query.text.isEmpty,
+              autofocus: session.takeSearchFocus(tab.id) && query.text.isEmpty,
             ),
           ),
         const SizedBox(height: 6),
