@@ -100,12 +100,19 @@ class SnoopBlocObserver extends BlocObserver {
     _track(bloc);
     // onEvent runs synchronously inside bloc.add(...), so the current stack
     // still holds the dispatch site.
-    final map = _pending[bloc] ??= HashMap<Object?, List<_PendingEvent>>(
+    final map = _pending[bloc] ??= LinkedHashMap<Object?, List<_PendingEvent>>(
       equals: identical,
       hashCode: identityHashCode,
     );
     (map[event] ??= <_PendingEvent>[]).add(_PendingEvent(_callSite()));
+    // bloc 8 never calls onDone, and a handler may never finish (an
+    // emit.forEach over an endless stream), so keep only the newest events.
+    while (map.length > _maxPending) {
+      map.remove(map.keys.first);
+    }
   }
+
+  static const int _maxPending = 100;
 
   _PendingEvent? _pendingOf(Bloc<Object?, Object?> bloc, Object? event) {
     final queue = _pending[bloc]?[event];
@@ -172,7 +179,9 @@ class SnoopBlocObserver extends BlocObserver {
   @override
   void onClose(BlocBase<Object?> bloc) {
     super.onClose(bloc);
-    if (enabled) Snoop.state.markDisposed(bloc);
+    if (!enabled) return;
+    _pending[bloc] = null;
+    Snoop.state.markDisposed(bloc);
   }
 }
 
