@@ -1,9 +1,23 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:snoop/snoop.dart';
 import 'package:snoop_bloc/snoop_bloc.dart';
 
 import 'helpers/fakes.dart';
+
+/// Whether the resolved bloc has `BlocObserver.onDone` (9.1 and up).
+final bool _hasOnDone = () {
+  try {
+    // ignore: avoid_dynamic_calls
+    (RecordingObserver() as dynamic).onDone;
+    return true;
+  } on NoSuchMethodError {
+    return false;
+  }
+}();
 
 void main() {
   final registry = Snoop.state;
@@ -120,6 +134,136 @@ void main() {
   test('registers as a state adapter', () {
     expect(SnoopAdapters.has(SnoopAdapterKind.state), isTrue);
     expect(SnoopAdapters.ids, <String>['bloc']);
+  });
+
+  test('a cubit emit is one change without an event', () async {
+    final cubit = CounterCubit()..increment();
+    expect(registry[cubit]!.changeCount, 1);
+    expect(registry[cubit]!.history.single.event, isNull);
+    await cubit.close();
+  });
+
+  test('a bloc event is one change, not counted twice', () async {
+    final bloc = CounterBloc()..add(Incremented());
+    await Future<void>.delayed(Duration.zero);
+    expect(registry[bloc]!.changeCount, 1);
+    await bloc.close();
+  });
+
+  test('a handler that emits several times records each with the event and site', () async {
+    final bloc = BurstBloc()..add(Burst());
+    await Future<void>.delayed(Duration.zero);
+    final history = registry[bloc]!.history;
+    expect(history.map((r) => r.next), <int>[3, 2, 1]);
+    expect(history.every((r) => r.event is Burst), isTrue);
+    expect(history.every((r) => r.emittedFrom!.contains('snoop_bloc_observer_test')), isTrue);
+    await bloc.close();
+  });
+
+  test('an event that emits nothing is recorded as no state change', () async {
+    final bloc = BurstBloc()
+      ..add(Incremented())
+      ..add(Idle());
+    await Future<void>.delayed(Duration.zero);
+    final tracked = registry[bloc]!;
+    expect(tracked.changeCount, 2);
+    final idle = tracked.history.first;
+    expect('${idle.event}', 'Idle (no state change)');
+    expect(idle.previous, 1);
+    expect(idle.next, 1);
+    expect(idle.emittedFrom, contains('snoop_bloc_observer_test'));
+    expect(tracked.history.last.emittedFrom, contains('snoop_bloc_observer_test'));
+    await bloc.close();
+  }, skip: !_hasOnDone);
+
+  test('a throwing handler is an error, not a no-op entry', () async {
+    late final BurstBloc bloc;
+    await runZonedGuarded(() async {
+      bloc = BurstBloc()..add(Crash());
+      await Future<void>.delayed(Duration.zero);
+    }, (error, stack) {});
+    expect(registry[bloc]!.changeCount, 0);
+    expect(registry[bloc]!.errorCount, 1);
+    await bloc.close();
+  });
+
+  test('a bloc created before snoop joined is tracked on its first change', () async {
+    final forwarding = ForwardingObserver();
+    Bloc.observer = forwarding;
+    final cubit = CounterCubit();
+    expect(registry.count, 0);
+
+    forwarding.observers.add(SnoopBlocObserver(enabled: true));
+    cubit.increment();
+    expect(registry.count, 1);
+    expect(registry[cubit]!.name, 'CounterCubit');
+    expect(registry[cubit]!.currentState, 1);
+    await cubit.close();
+  });
+
+  test('closed blocs are retained, then evicted past retainDisposed', () async {
+    registry.retainDisposed = 2;
+    final cubits = <CounterCubit>[for (var i = 0; i < 3; i++) CounterCubit()];
+    for (final c in cubits) {
+      await c.close();
+    }
+    expect(registry.count, 0);
+    expect(registry.disposed, hasLength(2));
+    registry.retainDisposed = 20;
+  });
+
+  test('addError records the error and still calls super last', () async {
+    final recording = RecordingObserver();
+    final forwarding = ForwardingObserver()
+      ..observers.addAll(<BlocObserver>[
+        SnoopBlocObserver(enabled: true, logErrors: false),
+        recording,
+      ]);
+    Bloc.observer = forwarding;
+    final cubit = CounterCubit()..fail();
+    final tracked = registry[cubit]!;
+    expect(tracked.errorCount, 1);
+    expect(tracked.lastErrorStackTrace, isNotNull);
+    expect(recording.calls, <String>['onError']);
+    await cubit.close();
+  });
+
+  test('two instances of one cubit are two sources with distinct ids', () async {
+    final a = CounterCubit();
+    final b = CounterCubit();
+    expect(registry[a]!.id, isNot(registry[b]!.id));
+    expect(registry.count, 2);
+    await Future.wait(<Future<void>>[a.close(), b.close()]);
+  });
+
+  test('states with a throwing toString and hashCode never break the app', () async {
+    final cubit = HostileCubit()..bump();
+    expect(registry[cubit]!.changeCount, 1);
+    await cubit.close();
+  });
+
+  testWidgets('the State tab lists a bloc and its history', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => SnoopOverlay(enabled: true, child: child!),
+        home: const Scaffold(body: Text('home')),
+      ),
+    );
+    final bloc = CounterBloc()..add(Incremented());
+    final other = CounterBloc();
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('snoop.bubble')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('State 2'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('CounterBloc #'), findsNWidgets(2));
+
+    await tester.tap(find.textContaining('CounterBloc #${registry[bloc]!.id}'));
+    await tester.pumpAndSettle();
+    expect(find.text('▸ Incremented'), findsOneWidget);
+    await tester.runAsync(() => Future.wait(<Future<void>>[bloc.close(), other.close()]));
   });
 
   test('call sites skip bloc frames', () {
