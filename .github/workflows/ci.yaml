@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Flutter ${{ matrix.flutter }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The newest stable, and the oldest Flutter the packages allow.
+        flutter: [stable, 3.38.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ matrix.flutter == 'stable' && '' || matrix.flutter }}
+          cache: true
+      - run: flutter pub get
+      # The formatter's output changes between Dart versions; check it on one.
+      - if: matrix.flutter == 'stable'
+        run: dart run melos run format --no-select
+      - run: dart run melos run analyze --no-select
+      - run: dart run melos run test --no-select
+
+  downgrade:
+    name: Lowest dependency versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub downgrade
+      # MultiBlocObserver ships with bloc 9.2, above the lowest version allowed.
+      - run: rm packages/snoop_bloc/test/multi_observer_test.dart
+      - run: dart run melos run analyze --no-select
+      - run: dart run melos run test --no-select
+
+  publish-dry-run:
+    name: Publish dry run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run melos run dry-run --no-select
