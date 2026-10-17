@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -61,33 +62,67 @@ class SnoopDioInterceptor extends Interceptor {
 
   static const String _key = 'snoop.record';
   static const String _replayKey = 'snoop.replayOf';
+  static const String _ownerKey = 'snoop.owner';
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (!enabled || !(shouldRecord?.call(options) ?? true)) return handler.next(options);
+    if (!enabled || !_wants(options)) return handler.next(options);
+    final previous = options.extra[_key];
+    final mine = identical(options.extra[_ownerKey], this);
+    // Another Snoop interceptor on this Dio already records this pass.
+    if (previous is _DioCallRecord && previous.isPending && !mine) return handler.next(options);
+    final retryOf = previous is _DioCallRecord && mine ? _supersede(previous) : null;
     final registry = Snoop.network;
-    final body = _normalizeBody(options);
-    final record = SnoopCallRecord(
+    final body = SnoopSafe.run(() => _normalizeBody(options)) ?? (body: null, truncated: false);
+    final record = _DioCallRecord(
       id: registry.nextId(),
       client: 'dio',
       method: options.method,
       uri: options.uri,
       startedAt: DateTime.now(),
       requestBody: body.body,
+      requestBytes: _requestBytes(options.data),
       requestTruncated: body.truncated,
       requestHeaders: SnoopHeaders.flatten(options.headers, _redacted),
       replayOf: options.extra[_replayKey] as int?,
+      retryOf: retryOf,
     );
     if (options.data is! Stream) {
       record.replayer = (request) => _replay(options, record, request);
     }
     options.extra[_key] = record;
+    options.extra[_ownerKey] = this;
     registry.add(record);
 
     final simulation = Snoop.networkConditions.simulate(options.uri);
     if (simulation == null) return handler.next(options);
     unawaited(_simulate(simulation, options, handler, record));
   }
+
+  bool _wants(RequestOptions options) {
+    final test = shouldRecord;
+    return test == null || (SnoopSafe.run(() => test(options)) ?? true);
+  }
+
+  /// Closes a record whose call is being retried and returns its id. A call
+  /// still in flight is marked `superseded`.
+  int _supersede(SnoopCallRecord old) {
+    if (!old.completed) {
+      old
+        ..errorType = 'superseded'
+        ..duration = DateTime.now().difference(old.startedAt)
+        ..completed = true;
+      Snoop.network.changed();
+    }
+    return old.id;
+  }
+
+  /// The encoded size of a `String` or byte-list payload, `null` otherwise.
+  static int? _requestBytes(Object? data) => switch (data) {
+    String() => utf8.encode(data).length,
+    List<int>() => data.length,
+    _ => null,
+  };
 
   /// Delays the call, then either sends it or fails it with the rolled
   /// fault. A failed call never reaches the server; it goes on through the
@@ -157,7 +192,9 @@ class SnoopDioInterceptor extends Interceptor {
       cancelToken: CancelToken(),
       onSendProgress: (_, _) {},
       onReceiveProgress: (_, _) {},
-      extra: <String, Object?>{...original.extra, _replayKey: record.id}..remove(_key),
+      extra: <String, Object?>{...original.extra, _replayKey: record.id}
+        ..remove(_key)
+        ..remove(_ownerKey),
     );
     try {
       await (replayClient ?? _fallbackClient).fetch<Object?>(options);
@@ -170,24 +207,39 @@ class SnoopDioInterceptor extends Interceptor {
 
   @override
   void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
-    final record = response.requestOptions.extra[_key];
-    if (record is SnoopCallRecord) {
-      _complete(record, response.requestOptions, response);
+    final extra = response.requestOptions.extra;
+    final record = extra[_key];
+    if (record is _DioCallRecord && identical(extra[_ownerKey], this)) {
+      SnoopSafe.run(() {
+        // A later interceptor resolved an error we had already recorded.
+        if (record.completed && (record.errorType != null || record.cancelled)) {
+          record
+            ..recoveredFrom = record.error ?? record.errorType
+            ..error = null
+            ..errorType = null
+            ..cancelled = false
+            ..completed = false;
+        }
+        _complete(record, response.requestOptions, response);
+      });
     }
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    final record = err.requestOptions.extra[_key];
-    if (record is SnoopCallRecord) {
-      if (err.type == DioExceptionType.cancel) {
-        record.cancelled = true;
-      } else {
-        record.error = err.message ?? err.error?.toString() ?? err.type.name;
-      }
-      record.errorType = err.type.name;
-      _complete(record, err.requestOptions, err.response);
+    final extra = err.requestOptions.extra;
+    final record = extra[_key];
+    if (record is _DioCallRecord && identical(extra[_ownerKey], this)) {
+      SnoopSafe.run(() {
+        if (err.type == DioExceptionType.cancel) {
+          record.cancelled = true;
+        } else {
+          record.error = err.message ?? err.error?.toString() ?? err.type.name;
+        }
+        record.errorType = err.type.name;
+        _complete(record, err.requestOptions, err.response);
+      });
     }
     handler.next(err);
   }
@@ -195,6 +247,7 @@ class SnoopDioInterceptor extends Interceptor {
   void _complete(SnoopCallRecord record, RequestOptions options, Response<dynamic>? response) {
     if (record.completed) return;
     final body = response == null ? (body: null, truncated: false) : _normalizeResponse(response);
+    final realUri = response?.realUri;
     record
       ..statusCode = response?.statusCode
       ..responseBody = body.body
@@ -203,7 +256,7 @@ class SnoopDioInterceptor extends Interceptor {
           ? <String, String>{}
           : SnoopHeaders.flatten(response.headers.map, _redacted)
       ..responseBytes = _contentLength(response)
-      ..finalUri = response?.realUri
+      ..finalUri = realUri == record.uri ? null : realUri
       ..requestHeaders = SnoopHeaders.flatten(options.headers, _redacted)
       ..duration = DateTime.now().difference(record.startedAt)
       ..completed = true;
@@ -235,7 +288,9 @@ class SnoopDioInterceptor extends Interceptor {
         body: <String, Object?>{
           'fields': <String, String>{for (final f in data.fields) f.key: f.value},
           'files': <String>[
-            for (final f in data.files) '${f.key}: ${f.value.filename ?? '<file>'}',
+            for (final f in data.files)
+              '${f.key}: ${f.value.filename ?? '<file>'} '
+                  '(${SnoopBody.readableSize(f.value.length)})',
           ],
         },
         truncated: false,
@@ -243,4 +298,31 @@ class SnoopDioInterceptor extends Interceptor {
     }
     return SnoopBody.normalize(data, contentType: options.contentType);
   }
+}
+
+/// A call record that remembers the error a later interceptor resolved.
+class _DioCallRecord extends SnoopCallRecord {
+  _DioCallRecord({
+    required super.id,
+    required super.client,
+    required super.method,
+    required super.uri,
+    required super.startedAt,
+    super.requestBody,
+    super.requestBytes,
+    super.requestTruncated,
+    super.replayOf,
+    super.retryOf,
+    super.requestHeaders,
+  });
+
+  /// The failure that was recorded before a later interceptor turned the
+  /// call into a success.
+  String? recoveredFrom;
+
+  @override
+  Map<String, Object?> toJson() => <String, Object?>{
+    ...super.toJson(),
+    if (recoveredFrom != null) 'recoveredFrom': recoveredFrom,
+  };
 }

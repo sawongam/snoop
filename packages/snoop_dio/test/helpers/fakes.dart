@@ -46,3 +46,41 @@ Dio fakeDio() {
     );
   return dio;
 }
+
+/// Answers every request with fixed [bytes] and [contentType], optionally
+/// reporting [redirectTo] as the final location.
+class BytesAdapter implements HttpClientAdapter {
+  BytesAdapter(this.bytes, {this.contentType = 'application/octet-stream', this.redirectTo});
+
+  final List<int> bytes;
+  final String contentType;
+  final Uri? redirectTo;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    // Drain the request body like a real adapter would.
+    if (requestStream != null) await requestStream.drain<void>();
+    return ResponseBody(
+      Stream<Uint8List>.value(Uint8List.fromList(bytes)),
+      200,
+      headers: <String, List<String>>{
+        Headers.contentTypeHeader: <String>[contentType],
+      },
+      isRedirect: redirectTo != null,
+      redirects: redirectTo == null
+          ? const <RedirectRecord>[]
+          : <RedirectRecord>[RedirectRecord(302, 'GET', redirectTo!)],
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// A Dio on [adapter], with the same base URL as [fakeDio].
+Dio dioOn(HttpClientAdapter adapter) =>
+    Dio(BaseOptions(baseUrl: 'https://api.example.com'))..httpClientAdapter = adapter;
